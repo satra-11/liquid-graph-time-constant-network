@@ -1,10 +1,6 @@
 # liquid-graph-time-constant-network
 This repository provides a reference implementation of the Liquid-Graph Time-Constant (LGTC) networks introduced in the paper “Liquid-Graph Time-Constant Network for Multi-Agent Systems Control” (https://arxiv.org/pdf/2404.13982).
 
-$$
-f 
-$$
-
 # Getting started
 ### 1. pip + venv
 ```bash
