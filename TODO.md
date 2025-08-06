@@ -1,11 +1,11 @@
 # TODO
 
-- [x] Read section I, and take notes in Obsidian whenever you encounter any new concepts.
-- [ ] Read section II, and take notes in Obsidian whenever you encounter any new concepts.
-- [ ] Read section III , and take notes in Obsidian whenever you encounter any new concepts.
-- [ ] Read section IV , and take notes in Obsidian whenever you encounter any new concepts.
-- [ ] Read section V , and take notes in Obsidian whenever you encounter any new concepts.
-- [ ] Read section VI , and take notes in Obsidian whenever you encounter any new concepts.
+- [x] Read section I(INTRODUCTION), and take notes in Obsidian whenever you encounter any new concepts.
+- [ ] Read section II(PRELIMINARIES), and take notes in Obsidian whenever you encounter any new concepts.
+- [ ] Read section III(LIQUID-GRAPH TIME CONSTANT NETWORK) , and take notes in Obsidian whenever you encounter any new concepts.
+- [ ] Read section IV(CLOSED-FORM APPROXIMATION) , and take notes in Obsidian whenever you encounter any new concepts.
+- [ ] Read section V(VALIDATION EXAMPLE) , and take notes in Obsidian whenever you encounter any new concepts.
+- [x] Read section VI(Conclusion) , and take notes in Obsidian whenever you encounter any new concepts.
 - [ ] Check codes under src/lgtcn/layers, and see if there are any refactor that could be done.
 - [ ] Check codes under src/lgtcn/models, and see if there are any refactor that could be done.
 - [ ] Check codes under src/lgtcn/utils, and see if there are any refactor that could be done.
@@ -17,3 +17,10 @@
 - [ ] Experiment with GGNN and GraphODE.
 - [ ] Send draft to professor and address feedback
 - [ ] Ask senpai if i can use the school's server
+
+### Obsidian
+- [ ] Research and summerize about multi-agent systems (MAS)
+- [ ] Research and summerize about contraction analysis
+- [ ] Research and summerize about ISS (Input-to-State Stability)
+- [ ] Research and summerize about incremental ISS (δISS)
+- [ ] 
