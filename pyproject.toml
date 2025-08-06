@@ -7,6 +7,13 @@ authors = [
 ]
 dependencies = [
     "torch>=2.7.1",
+    "pytest>=8.4.1",
+    "tqdm>=4.67.1",
+    "pandas>=2.3.1",
+    "seaborn>=0.13.2",
+    "matplotlib>=3.10.5",
+    "gymnasium>=1.2.0",
+    "vmas==1.5.0",
 ]
 readme = "README.md"
 requires-python = ">= 3.8"

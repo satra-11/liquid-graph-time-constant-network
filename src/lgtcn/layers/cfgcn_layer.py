@@ -1,0 +1,41 @@
+import math
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+from .graph_filter import GraphFilter
+
+
+class CfGCNLayer(nn.Module):
+    """Discrete closed-form approximation that avoids ODE solving."""
+
+    def __init__(self, in_dim: int, hidden_dim: int, K: int, eps: float = 1e-3):
+        super().__init__()
+        self.K = K
+        self.hidden_dim = hidden_dim
+        self.eps = eps
+
+        # Filters share structure with LGTCNLayer
+        self.A_hat = GraphFilter(hidden_dim, hidden_dim, K)
+        self.B_hat = GraphFilter(in_dim,    hidden_dim, K)
+        self.A_state = GraphFilter(hidden_dim, hidden_dim, K)
+        self.B_state = GraphFilter(in_dim,    hidden_dim, K)
+
+        self.bx = nn.Parameter(torch.zeros(1, hidden_dim))
+        self.bu = nn.Parameter(torch.zeros(1, hidden_dim))
+        self.b  = nn.Parameter(torch.ones(1, hidden_dim) * 0.1)
+
+    def forward(self, x: torch.Tensor, u: torch.Tensor, S_powers, t: float = 1.0):
+        f_sigma = F.relu(self.B_hat(u, S_powers) + self.bu) + \
+                  F.relu(self.A_hat(x, S_powers) + self.bx)
+
+        f_x = F.relu(self.A_hat(x, S_powers) + self.bx)
+
+        # crude fi term following paper eq. 20 (element-wise division is safe with eps)
+        fi_num = self.A_state(x, S_powers)
+        fi = - fi_num / (x + self.eps)
+
+        coeff = torch.sigmoid(- (self.b + f_x + fi) * t + math.pi)
+        sigma_u = torch.tanh(self.B_state(u, S_powers))
+        x_new = (x * coeff - sigma_u) * torch.sigmoid(2 * f_sigma) + sigma_u
+        return torch.clamp(x_new, -1.0, 1.0)
