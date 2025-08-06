@@ -1,6 +1,6 @@
 # TODO
 
-- [ ] **(30 min)** Read the abstract and introduction, then summarize the core problem and contributions in Obsidian.
+- [x] **(30 min)** Read the abstract and introduction, then summarize the core problem and contributions in Obsidian.
 - [ ] **(30 min)** Skim all figures and tables, documenting key takeaways from the visual summaries in Obsidian.
 - [ ] **(45 min)** Read the methodology section, taking detailed notes on the LGTCN model's technical details in Obsidian.
 - [ ] **(30 min)** Read the results and conclusion, summarizing the experimental setup and outcomes in Obsidian.
