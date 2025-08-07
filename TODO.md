@@ -1,7 +1,7 @@
 # TODO
 
 - [x] Read section I(INTRODUCTION), and take notes in Obsidian whenever you encounter any new concepts.
-- [ ] Read section II(PRELIMINARIES), and take notes in Obsidian whenever you encounter any new concepts.
+- [x] Read section II(PRELIMINARIES), and take notes in Obsidian whenever you encounter any new concepts.
 - [ ] Read section III(LIQUID-GRAPH TIME CONSTANT NETWORK) , and take notes in Obsidian whenever you encounter any new concepts.
 - [ ] Read section IV(CLOSED-FORM APPROXIMATION) , and take notes in Obsidian whenever you encounter any new concepts.
 - [ ] Read section V(VALIDATION EXAMPLE) , and take notes in Obsidian whenever you encounter any new concepts.
@@ -21,6 +21,7 @@
 ### Obsidian
 - [ ] Research and summerize about multi-agent systems (MAS)
 - [ ] Research and summerize about contraction analysis
-- [ ] Research and summerize about ISS (Input-to-State Stability)
-- [ ] Research and summerize about incremental ISS (δISS)
-- [ ] 
+- [x] Research and summerize about ISS (Input-to-State Stability)
+- [x] Research and summerize about incremental ISS (δISS)
+- [x] Research and summerize about GNN
+
