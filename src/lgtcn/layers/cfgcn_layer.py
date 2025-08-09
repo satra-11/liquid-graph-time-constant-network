@@ -18,7 +18,7 @@ class CfGCNLayer(nn.Module):
         # Filters share structure with LGTCNLayer
         self.A_hat = GraphFilter(hidden_dim, hidden_dim, K)
         self.B_hat = GraphFilter(in_dim,    hidden_dim, K)
-        self.A_state = GraphFilter(hidden_dim, hidden_dim, K)
+        self.A_state = GraphFilter(hidden_dim, hidden_dim, K, include_k0=False)
         self.B_state = GraphFilter(in_dim,    hidden_dim, K)
 
         self.bx = nn.Parameter(torch.zeros(1, hidden_dim))
@@ -32,8 +32,8 @@ class CfGCNLayer(nn.Module):
         f_x = F.relu(self.A_hat(x, S_powers) + self.bx)
 
         # crude fi term following paper eq. 20 (element-wise division is safe with eps)
-        fi_num = self.A_state(x, S_powers)
-        fi = - fi_num / (x + self.eps)
+        Dxf = (self.A_hat(x, S_powers) + self.bx > 0).to(x.dtype) # Approximate D_x(A_hat_S(x)) by A_hat_S(x) itself for efficiency
+        fi = -(Dxf * self.A_hat(x, S_powers)) + (self.A_state(x, S_powers) / (x + self.eps))
 
         coeff = torch.sigmoid(- (self.b + f_x + fi) * t + math.pi)
         sigma_u = torch.tanh(self.B_state(u, S_powers))
