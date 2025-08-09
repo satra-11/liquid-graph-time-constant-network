@@ -3,7 +3,7 @@ import torch.nn as nn
 
 
 class GraphFilter(nn.Module):
-    """Implements H_S(x) = sum_{k=0..K} S^k x W_k."""
+    """Implements H_S(x) = sum_{k=0..K} S^k x W_k(eq. 2)."""
 
     def __init__(self, in_dim: int, out_dim: int, K: int, include_k0: bool = True, bias: bool = False):
         super().__init__()
@@ -11,17 +11,15 @@ class GraphFilter(nn.Module):
         self.include_k0 = include_k0
         self.weight = nn.Parameter(torch.empty(K + 1, in_dim, out_dim))
         nn.init.xavier_uniform_(self.weight)
-        self.bias = nn.Parameter(torch.zeros(1, out_dim)) if bias else None
 
     def forward(self, x: torch.Tensor, S_powers):
-        # Determine start index based on include_k0 flag
         start_k = 0 if self.include_k0 else 1
 
         # Normalize S_powers to list/tuple
         if not isinstance(S_powers, (list, tuple)):
             raise TypeError("S_powers must be a list/tuple of length K+1 with powers [I, S, ..., S^K].")
 
-        # Batch or single
+        # Batch
         if x.ndim == 3:
             # x: (B, N, Din)
             B, N, Din = x.shape
@@ -42,8 +40,6 @@ class GraphFilter(nn.Module):
                 # out += xk @ Wk  using einsum (no expand)
                 out = out + torch.einsum('bni,id->bnd', xk, Wk)
 
-            if self.bias is not None:
-                out = out + self.bias.view(1, 1, -1)
             return out
 
         elif x.ndim == 2:
@@ -59,8 +55,6 @@ class GraphFilter(nn.Module):
                 Wk = self.weight[k]                                 # (Din, Dout)
                 out = out + xk @ Wk                                 # (N, Dout)
 
-            if self.bias is not None:
-                out = out + self.bias
             return out
 
         else:
