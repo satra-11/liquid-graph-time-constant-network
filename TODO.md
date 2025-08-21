@@ -6,7 +6,7 @@
 * [x] Read section II (PRELIMINARIES) — note new concepts in Obsidian
 * [x] Read section III (LIQUID-GRAPH TIME CONSTANT NETWORK) — note new concepts in Obsidian
 * [x] Read section IV (CLOSED-FORM APPROXIMATION) — note new concepts in Obsidian
-* [ ] Read section V (VALIDATION EXAMPLE) — note new concepts in Obsidian
+* [x] Read section V (VALIDATION EXAMPLE) — note new concepts in Obsidian
 * [x] Read section VI (CONCLUSION) — note new concepts in Obsidian
 
 ## 2) Code Review / Refactor
