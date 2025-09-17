@@ -15,3 +15,9 @@ pip install -r requirements.lock
 git clone https://github.com/satra-11/liquid-graph-time-constant-network .
 rye sync
 ```
+### Commands
+1. 
+#### 2. Testing
+```python
+python -m pytest ./test
+```

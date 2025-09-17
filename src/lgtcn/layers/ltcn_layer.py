@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-class LTCNLayerStrict(nn.Module):
+class LTCNLayer(nn.Module):
     """
     Strict LTC layer faithful to the MATLAB ltc_def dynamics.
 
@@ -103,7 +103,9 @@ class LTCNLayerStrict(nn.Module):
         for _ in range(n_steps):
             # tau positive
             tau = F.softplus(self._tau_raw) + self.tau_eps         # shape (N,)
-            tau = tau.view(1, *([1] * (len(batch))), B, k).expand(*batch, B, k)
+            tau = tau.view(B, k)
+            if len(batch) > 0:
+                tau = tau.view(*([1] * len(batch)), B, k).expand(*batch, B, k)
 
             # ---- net_out per block
             net_out = []
