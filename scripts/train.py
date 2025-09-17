@@ -9,9 +9,6 @@ train.py ― minimal training script for LGTC / CfGC controllers
 # ---------------------------------------------------------------------------
 # Compatibility shim
 # ---------------------------------------------------------------------------
-import gymnasium as gym
-import sys
-sys.modules["gym"] = gym
 
 # ---------------------------------------------------------------------------
 # Standard library
@@ -29,8 +26,6 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.distributions import Categorical
-from gymnasium import spaces as gspaces
 
 import vmas
 from vmas.simulator.environment import Environment
