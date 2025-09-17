@@ -1,5 +1,7 @@
 # TODO
 
+* [ ] Vmasタスクから画像欠損識別タスクに変える
+
 ### 論文読み
 * [x] Section I (INTRODUCTION) を読む — 新しい概念をObsidianにメモ
 * [x] Section II (PRELIMINARIES) を読む — 新しい概念をObsidianにメモ
