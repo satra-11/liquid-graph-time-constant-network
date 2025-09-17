@@ -5,7 +5,6 @@ train.py ― minimal training script for LGTC / CfGC controllers
 * This script has been adapted to work with a custom "flocking" scenario
   that uses Lidar sensors and a continuous HeuristicPolicy expert.
 """
-from __future__ import annotations
 
 # ---------------------------------------------------------------------------
 # Compatibility shim
