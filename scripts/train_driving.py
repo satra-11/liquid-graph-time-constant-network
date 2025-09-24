@@ -16,11 +16,10 @@ import matplotlib.pyplot as plt
 
 from lgtcn.tasks import (
     AutonomousDrivingTask, 
-    DrivingController, 
     CorruptionConfig,
-    NetworkComparator,
-    StabilityAnalyzer
+    NetworkComparator
 )
+from lgtcn.models import DrivingController
 
 
 def set_seed(seed: int):
