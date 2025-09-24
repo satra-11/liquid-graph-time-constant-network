@@ -179,7 +179,7 @@ class AutonomousDrivingTask:
                 
                 batch_clean.append(frame)
                 batch_corrupted.append(corrupted_frame)
-                batch_controls.append(torch.tensor([target_steering, target_speed]))
+                batch_controls.append(torch.tensor([target_steering, target_speed], dtype=torch.float32))
             
             clean_frames.append(torch.stack(batch_clean))
             corrupted_frames.append(torch.stack(batch_corrupted))
