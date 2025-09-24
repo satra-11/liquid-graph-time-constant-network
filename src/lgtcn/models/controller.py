@@ -83,41 +83,41 @@ class DrivingController(nn.Module):
         features = self.feature_extractor(frames_flat)  # (B*T, 128, 8, 8)
         
         # パッチ特徴として整形
-        features = features.view(B, T, -1)  # (B, T, 128*8*8)
-        patch_features = self.patch_encoder(features)  # (B, T, hidden_dim)
+        features = features.view(B, T, 128, 8, 8).permute(0,1,3,4,2)  # (B, T, 128*8*8)
+        node_feats = features.view(B, T, 64, 128)  # (B, T, 128*8*8)
+        node_feats = self.node_encoder(node_feats)
         
         if self.use_lgtcn:
             # LGTCNの場合：グラフ処理
             if adjacency is None:
-                # デフォルトの隣接行列（全結合）
-                num_nodes = 1  # 簡単化：1ノードとして扱う
-                adjacency = torch.ones(B, num_nodes, num_nodes, device=frames.device)
-            
-            from ..utils import compute_support_powers
-            S_powers = compute_support_powers(adjacency, self.K)
-            S_powers_2d = [sp.squeeze(-3) for sp in S_powers] if len(S_powers) > 0 else []
+                N = node_feats.size(2)
+                adjacency = torch.ones(B, T, N, N, device=frames.device)
             
             # 時系列処理
             controls = []
             current_hidden = hidden_state
             
+            from ..utils import compute_support_powers
+            
             for t in range(T):
                 if current_hidden is None:
                     current_hidden = torch.zeros(B, 1, self.hidden_dim, device=frames.device)
                 
-                # パッチ特徴を入力として使用
-                input_features = patch_features[:, t:t+1, :]  # (B, 1, hidden_dim)
+                xt = node_feats[:, t, :, :] # (B, N, hidden_dim)
+                
+                A_t = adjacency[:, t, :, :] # (B, N, N)
+                S_powers = compute_support_powers(A_t, self.K)
                 
                 # LGTCN処理
                 next_hidden = self.temporal_processor(
-                    current_hidden.squeeze(1), 
-                    input_features.squeeze(1), 
-                    S_powers_2d
+                    current_hidden, 
+                    xt, 
+                    S_powers,
                 )
                 next_hidden = next_hidden.unsqueeze(1)
                 
                 # 制御信号生成
-                control = self.control_decoder(next_hidden.squeeze(1))
+                control = self.control_decoder(next_hidden.mean(dim=1))  # 簡単に平均プールで (B,H)→(B,2)
                 controls.append(control)
                 current_hidden = next_hidden
                 
@@ -134,10 +134,11 @@ class DrivingController(nn.Module):
             current_hidden = hidden_state
             
             for t in range(T):
+                x_t = node_feats[:, t].mean(dim=1)
                 # LTCN処理
                 next_hidden = self.temporal_processor(
                     current_hidden,
-                    patch_features[:, t, :],  # (B, hidden_dim)
+                    x_t,  # (B, hidden_dim)
                     dt=0.1,
                     n_steps=1
                 )
