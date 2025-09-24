@@ -297,6 +297,12 @@ class NetworkComparator:
     ) -> StabilityMetrics:
         """単一モデルの評価"""
         
+        clean_data = clean_data.to(self.device)
+        corrupted_data = corrupted_data.to(self.device)
+        targets = targets.to(self.device)
+        if adjacency is not None:
+            adjacency = adjacency.to(self.device)
+
         # 制御精度
         model.eval()
         with torch.no_grad():
