@@ -373,9 +373,9 @@ class NetworkComparator:
             
             summary['winner_by_metric'][metric] = {
                 'winner': winner,
-                'lgtcn_avg': lgtcn_avg,
-                'ltcn_avg': ltcn_avg,
-                'difference': abs(lgtcn_avg - ltcn_avg)
+                'lgtcn_avg': float(lgtcn_avg),
+                'ltcn_avg': float(ltcn_avg),
+                'difference': float(abs(lgtcn_avg - ltcn_avg))
             }
         
         return summary
@@ -433,15 +433,15 @@ class NetworkComparator:
         def metrics_to_dict(metrics):
             if isinstance(metrics, StabilityMetrics):
                 return {
-                    'control_mse': metrics.control_mse,
-                    'control_mae': metrics.control_mae,
-                    'hidden_state_variance': metrics.hidden_state_variance,
-                    'hidden_state_drift': metrics.hidden_state_drift,
-                    'lyapunov_exponent': metrics.lyapunov_exponent,
-                    'corruption_resilience': metrics.corruption_resilience,
-                    'recovery_time': metrics.recovery_time,
-                    'prediction_consistency': metrics.prediction_consistency,
-                    'temporal_smoothness': metrics.temporal_smoothness
+                    'control_mse': float(metrics.control_mse),
+                    'control_mae': float(metrics.control_mae),
+                    'hidden_state_variance': float(metrics.hidden_state_variance),
+                    'hidden_state_drift': float(metrics.hidden_state_drift),
+                    'lyapunov_exponent': float(metrics.lyapunov_exponent),
+                    'corruption_resilience': float(metrics.corruption_resilience),
+                    'recovery_time': float(metrics.recovery_time),
+                    'prediction_consistency': float(metrics.prediction_consistency),
+                    'temporal_smoothness': float(metrics.temporal_smoothness)
                 }
             return metrics
         
