@@ -115,12 +115,14 @@ class DrivingController(nn.Module):
                     xt, 
                     S_powers,
                 )
-                next_hidden = next_hidden.unsqueeze(1)
+                next_hidden = self.temporal_processor(current_hidden, xt, S_powers)
                 
                 # 制御信号生成
                 control = self.control_decoder(next_hidden.mean(dim=1))  # 簡単に平均プールで (B,H)→(B,2)
                 controls.append(control)
                 current_hidden = next_hidden
+                
+                
                 
             controls = torch.stack(controls, dim=1)
             final_hidden = current_hidden
