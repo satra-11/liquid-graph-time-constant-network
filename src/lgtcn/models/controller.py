@@ -145,8 +145,7 @@ class DrivingController(nn.Module):
                 )
                 
                 # 制御信号生成（平均プール）
-                pooled_hidden = next_hidden.view(B, -1, self.temporal_processor.k).mean(dim=1)
-                control = self.control_decoder(pooled_hidden)
+                control = self.control_decoder(next_hidden)
                 controls.append(control)
                 current_hidden = next_hidden
                 
