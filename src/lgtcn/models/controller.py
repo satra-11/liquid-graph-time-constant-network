@@ -19,6 +19,7 @@ class DrivingController(nn.Module):
         self.hidden_dim = hidden_dim
         self.K = K
         self.use_lgtcn = use_lgtcn
+        self.node_encoder = nn.Linear(128, hidden_dim)
         
         # CNN特徴抽出器
         self.feature_extractor = nn.Sequential(
