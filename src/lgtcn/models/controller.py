@@ -102,7 +102,7 @@ class DrivingController(nn.Module):
             
             for t in range(T):
                 if current_hidden is None:
-                    current_hidden = torch.zeros(B, 1, self.hidden_dim, device=frames.device)
+                    current_hidden = torch.zeros(B, N, self.hidden_dim, device=frames.device)
                 
                 xt = node_feats[:, t, :, :] # (B, N, hidden_dim)
                 
@@ -115,8 +115,6 @@ class DrivingController(nn.Module):
                     xt, 
                     S_powers,
                 )
-                next_hidden = self.temporal_processor(current_hidden, xt, S_powers)
-                
                 # 制御信号生成
                 control = self.control_decoder(next_hidden.mean(dim=1))  # 簡単に平均プールで (B,H)→(B,2)
                 controls.append(control)
