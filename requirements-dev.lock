@@ -11,26 +11,17 @@
 
 -e file:.
 cloudpickle==3.1.1
-    # via gym
-    # via gymnasium
+    # via lgtcn
 contourpy==1.3.3
     # via matplotlib
 cycler==0.12.1
     # via matplotlib
-farama-notifications==0.0.4
-    # via gymnasium
 filelock==3.18.0
     # via torch
 fonttools==4.59.0
     # via matplotlib
 fsspec==2025.7.0
     # via torch
-gym==0.26.2
-    # via vmas
-gym-notices==0.1.0
-    # via gym
-gymnasium==1.2.0
-    # via lgtcn
 iniconfig==2.1.0
     # via pytest
 jinja2==3.1.6
@@ -48,12 +39,9 @@ networkx==3.5
     # via torch
 numpy==2.3.2
     # via contourpy
-    # via gym
-    # via gymnasium
     # via matplotlib
     # via pandas
     # via seaborn
-    # via vmas
 packaging==25.0
     # via matplotlib
     # via pytest
@@ -64,8 +52,6 @@ pillow==11.3.0
     # via matplotlib
 pluggy==1.6.0
     # via pytest
-pyglet==1.5.27
-    # via vmas
 pygments==2.19.2
     # via pytest
 pyparsing==3.2.3
@@ -83,18 +69,13 @@ setuptools==80.9.0
     # via torch
 six==1.17.0
     # via python-dateutil
-    # via vmas
 sympy==1.14.0
     # via torch
 torch==2.7.1
     # via lgtcn
-    # via vmas
 tqdm==4.67.1
     # via lgtcn
 typing-extensions==4.14.1
-    # via gymnasium
     # via torch
 tzdata==2025.2
     # via pandas
-vmas==1.5.0
-    # via lgtcn
