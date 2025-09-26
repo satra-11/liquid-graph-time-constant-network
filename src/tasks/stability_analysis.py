@@ -1,13 +1,13 @@
 import torch
 import torch.nn as nn
 import numpy as np
-from typing import Dict, List, Tuple, Optional, Any
+from typing import Dict, List, Optional, Any
 import matplotlib.pyplot as plt
 from dataclasses import dataclass
 from pathlib import Path
 import json
 
-from ..models import LGTCNController
+from models import LGTCNController
 
 
 @dataclass
