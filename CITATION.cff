@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+message: >-
+  If you use this repository or its experiments, please cite the following work(s).
+title: Liquid-Graph Time-Constant Network (LGTC) Reference Implementation
+authors:
+  - family-names: Sato
+    given-names: Tomohiro
+    affiliation: Kogakuin University
+# ここから「この論文を引用してね」という指定
+preferred-citation:
+  type: conference-paper
+  title: Toward Driving Scene Understanding: A Dataset for Learning Driver Behavior and Causal Reasoning
+  authors:
+    - family-names: Ramanishka
+      given-names: Vasili
+    - family-names: Chen
+      given-names: Yi-Ting
+    - family-names: Misu
+      given-names: Teruhisa
+    - family-names: Saenko
+      given-names: Kate
+  year: 2018
+  conference:
+    name: Conference on Computer Vision and Pattern Recognition (CVPR)
