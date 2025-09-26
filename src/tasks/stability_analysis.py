@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from pathlib import Path
 import json
 
+from ..models import LGTCNController
+
 
 @dataclass
 class StabilityMetrics:
@@ -50,7 +52,10 @@ class StabilityAnalyzer:
             
             for t in range(input_sequence.size(1)):
                 frame = input_sequence[:, t:t+1]
-                _, current_hidden = model(frame, adjacency, current_hidden)
+                if isinstance(model, LGTCNController):
+                    _, current_hidden = model(frame, adjacency, current_hidden)
+                else:
+                    _, current_hidden = model(frame, current_hidden)
                 hidden_states.append(current_hidden.clone())
             
             hidden_states = torch.stack(hidden_states, dim=1)  # (B, T, ...)
@@ -125,11 +130,17 @@ class StabilityAnalyzer:
         
         with torch.no_grad():
             # クリーンデータでの予測
-            clean_pred, _ = model(clean_data, adjacency)
+            if isinstance(model, LGTCNController):
+                clean_pred, _ = model(clean_data, adjacency)
+            else:
+                clean_pred, _ = model(clean_data)
             clean_loss = nn.MSELoss()(clean_pred, targets)
             
             # 汚損データでの予測
-            corrupted_pred, _ = model(corrupted_data, adjacency)
+            if isinstance(model, LGTCNController):
+                corrupted_pred, _ = model(corrupted_data, adjacency)
+            else:
+                corrupted_pred, _ = model(corrupted_data)
             corrupted_loss = nn.MSELoss()(corrupted_pred, targets)
             
             # 耐性指標（性能劣化の少なさ）
@@ -157,14 +168,21 @@ class StabilityAnalyzer:
         steps: int = 10
     ) -> float:
         """回復時間を推定"""
-        clean_loss = nn.MSELoss()(model(clean_data, adjacency)[0], targets)
+        if isinstance(model, LGTCNController):
+            clean_pred, _ = model(clean_data, adjacency)
+        else:
+            clean_pred, _ = model(clean_data)
+        clean_loss = nn.MSELoss()(clean_pred, targets)
         
         for step in range(steps):
             # 徐々に汚損を減らす
             alpha = 1.0 - (step + 1) / steps
             mixed_data = alpha * corrupted_data + (1 - alpha) * clean_data
             
-            pred, _ = model(mixed_data, adjacency)
+            if isinstance(model, LGTCNController):
+                pred, _ = model(mixed_data, adjacency)
+            else:
+                pred, _ = model(mixed_data)
             loss = nn.MSELoss()(pred, targets)
             
             # クリーンデータのlossに近づいたら回復したとみなす
@@ -188,7 +206,10 @@ class StabilityAnalyzer:
         
         for run in range(num_runs):
             with torch.no_grad():
-                pred, final_hidden = model(data, adjacency, hidden_state=None)
+                if isinstance(model, LGTCNController):
+                    pred, final_hidden = model(data, adjacency, hidden_state=None)
+                else:
+                    pred, final_hidden = model(data, hidden_state=None)
                 predictions.append(pred)
                 
                 # 隠れ状態の軌跡も記録
@@ -196,7 +217,10 @@ class StabilityAnalyzer:
                 current_hidden = None
                 for t in range(data.size(1)):
                     frame = data[:, t:t+1]
-                    _, current_hidden = model(frame, adjacency, current_hidden)
+                    if isinstance(model, LGTCNController):
+                        _, current_hidden = model(frame, adjacency, current_hidden)
+                    else:
+                        _, current_hidden = model(frame, current_hidden)
                     hidden_states.append(current_hidden.clone())
                 hidden_trajectories.append(torch.stack(hidden_states, dim=1))
         
@@ -306,8 +330,12 @@ class NetworkComparator:
         # 制御精度
         model.eval()
         with torch.no_grad():
-            pred_clean, _ = model(clean_data, adjacency)
-            pred_corrupted, _ = model(corrupted_data, adjacency)
+            if isinstance(model, LGTCNController):
+                pred_clean, _ = model(clean_data, adjacency)
+                pred_corrupted, _ = model(corrupted_data, adjacency)
+            else:
+                pred_clean, _ = model(clean_data)
+                pred_corrupted, _ = model(corrupted_data)
             
             control_mse = nn.MSELoss()(pred_corrupted, targets).item()
             control_mae = nn.L1Loss()(pred_corrupted, targets).item()
