@@ -24,7 +24,6 @@ python3 ./src/scripts/train_driving.py
 
 # Directory Structure
 ```
-/Users/satron/Desktop/lgtcn/
 ├───pyproject.toml
 ├───README.md
 ├───requirements-dev.lock
