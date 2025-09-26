@@ -19,7 +19,7 @@ from lgtcn.tasks import (
     CorruptionConfig,
     NetworkComparator
 )
-from lgtcn.models import DrivingController
+from lgtcn.models import LGTCNController, LTCNController
 
 
 def set_seed(seed: int):
@@ -126,8 +126,8 @@ def train_model(
 
 
 def evaluate_networks(
-    lgtcn_model: DrivingController,
-    ltcn_model: DrivingController,
+    lgtcn_model: LGTCNController,
+    ltcn_model: LTCNController,
     test_data: dict,
     device: torch.device
 ):
@@ -230,20 +230,18 @@ def main():
     
     # モデル作成
     print("Creating models...")
-    lgtcn_model = DrivingController(
+    lgtcn_model = LGTCNController(
         frame_height=64,
         frame_width=64,
         hidden_dim=args.hidden_dim,
-        K=args.K,
-        use_lgtcn=True
+        K=args.K
     )
     
-    ltcn_model = DrivingController(
+    ltcn_model = LTCNController(
         frame_height=64,
         frame_width=64,
         hidden_dim=args.hidden_dim,
-        K=args.K,
-        use_lgtcn=False
+        K=args.K
     )
     
     # LGTCN訓練
