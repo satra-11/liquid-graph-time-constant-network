@@ -79,4 +79,4 @@ class LTCNController(nn.Module):
         controls = torch.stack(controls, dim=1)
         final_hidden = current_hidden
         
-        return controls, final_hidden, None # LTCN does not produce attentions
+        return controls, final_hidden
