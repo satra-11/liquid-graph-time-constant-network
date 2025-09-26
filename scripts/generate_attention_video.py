@@ -10,7 +10,7 @@ import numpy as np
 import torch
 import matplotlib.pyplot as plt
 
-from lgtcn.models import DrivingController
+from models import DrivingController
 from scripts.train_driving import create_dataset, set_seed
 
 def generate_video(

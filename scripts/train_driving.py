@@ -14,12 +14,12 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 import matplotlib.pyplot as plt
 
-from lgtcn.tasks import (
+from tasks import (
     AutonomousDrivingTask, 
     CorruptionConfig,
     NetworkComparator
 )
-from lgtcn.models import LGTCNController, LTCNController
+from models import LGTCNController, LTCNController
 
 
 def set_seed(seed: int):
@@ -241,7 +241,6 @@ def main():
         frame_height=64,
         frame_width=64,
         hidden_dim=args.hidden_dim,
-        K=args.K
     )
     
     # LGTCN訓練

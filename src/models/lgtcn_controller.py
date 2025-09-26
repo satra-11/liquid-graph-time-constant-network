@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn
 from typing import Optional, Tuple
 
-from ..layers import LGTCNLayer
-from ..utils import compute_support_powers
+from layers import LGTCNLayer
+from  utils import compute_support_powers
 
 class LGTCNController(nn.Module):
     """映像データからLGTCNを使って制御信号を生成するコントローラー"""

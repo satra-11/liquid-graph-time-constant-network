@@ -12,8 +12,8 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 import json
 
-from lgtcn.layers import LGTCNLayer, LTCNLayer
-from lgtcn.utils import MissingDataGenerator, ImageToSequence, TimeSeriesImageDataset, compute_support_powers
+from layers import LGTCNLayer, LTCNLayer
+from utils import MissingDataGenerator, ImageToSequence, TimeSeriesImageDataset, compute_support_powers
 
 
 class ImageClassifier(nn.Module):

@@ -2,7 +2,8 @@ import torch
 import torch.nn as nn
 from typing import Optional, Tuple
 
-from ..layers import LTCNLayer
+from layers import LTCNLayer
+
 
 class LTCNController(nn.Module):
     """映像データからLTCNを使って制御信号を生成するコントローラー"""

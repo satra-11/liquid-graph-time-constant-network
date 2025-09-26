@@ -1,8 +1,7 @@
 import torch
 import pytest
 
-from lgtcn.utils import compute_support_powers
-from lgtcn.utils import GraphFilter
+from utils import (compute_support_powers, GraphFilter)
 
 
 @pytest.mark.parametrize("N,in_dim,out_dim,K", [(4, 6, 8, 0), (5, 10, 7, 2)])
