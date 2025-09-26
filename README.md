@@ -19,7 +19,7 @@ rye sync
 #### 1. Training
 Start training by executing a command below. The results are generated at /driving_results folder.
 ```bash
-python3 ./scripts/train_driving.py
+python3 ./src/scripts/train_driving.py
 ```
 
 ## Training Workflow
@@ -28,9 +28,8 @@ The `scripts/train_driving.py` script follows the workflow below to train and ev
 
 ```mermaid
 graph TD
-    A[Start] --> B[Setup<br>Parse Args, Set Seed, Create Dirs];
-    B --> C["Create Dataset<br>create_dataset()"];
-    C --> D[Split Data & Create DataLoaders<br>Train/Val/Test Sets];
+    A[Start] --> C["Create Dataset<br>create_dataset()"];
+    C --> D["Split Data & Create DataLoaders<br>Train/Val/Test Sets"];
     D --> E{Create Models};
     E --> F_LGTCN[LGTCN Model];
     E --> F_LTCN[LTCN Model];
@@ -40,16 +39,31 @@ graph TD
         F_LTCN --> G_LTCN["Train LTCN<br>train_model()"];
     end
 
-    G_LGTCN & G_LTCN --> H[Plot Training Curves<br>Save to training_curves.png];
+    G_LGTCN & G_LTCN --> H["Plot Training Curves<br>Save to training_curves.png"];
 
     subgraph Evaluation Phase
         H --> I["Evaluate Models on Test Set<br>evaluate_networks()"];
     end
     
     I --> J[Save All Results];
+    J --> K["Models (.pth)"];
+    J --> L["Training Info (.json)"];
+    J --> M["Comparison Results (.json)"];
+    J --> N["Comparison Plots (.png)"];
 
     J --> O[Print Summary to Console];
     O --> P[End];
+
+    %% Style Definitions (Purple Theme)
+    classDef io fill:#F5F5F5,color:#36454F,stroke:#B0B0B0,stroke-width:2px;
+    classDef models fill:#E6E6FA,color:#36454F,stroke:#6A0DAD,stroke-width:2px;
+    classDef phase fill:#6A0DAD,color:#FFFFFF,stroke:#483D8B,stroke-width:2px,font-weight:bold;
+    classDef startend fill:#483D8B,color:#FFFFFF,stroke:#36454F,stroke-width:2px;
+
+    class A,P startend;
+    class B,C,D,J,K,L,M,N,O io;
+    class E,F_LGTCN,F_LTCN models;
+    class G_LGTCN,H,I phase;
 ```
 
 #### 2. Testing
@@ -57,3 +71,5 @@ Unit tests are available by following command
 ```bash
 python -m pytest ./test
 ```
+```
+
