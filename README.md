@@ -25,71 +25,63 @@ python3 ./src/scripts/train_driving.py
 # Model Structures
 
 The `scripts/train_driving.py` script follows the workflow below to train and evaluate the LGTCN and LTCN models.
-### LTCN Model
-```mermaid 
-flowchart TD
-  A["frames <br> (B×T×H×W×C)"]
-    --> B["CNN<br>→(B·T)×128×8×8"]
-    --> C["reshape/permute <br>→ B×T×64×128"]
-    --> D["encoder <br>(128→H) → B×T×64×H"]
-    --> F["LTCNLayer:<br>  (h_t, x_t)→ h_{t+1}"]
-    --> G["decoder<br>(h_{t+1}) → B×2"]
-
-  G --> H["time-stacked controls: B×T×2"]
-  F --> I["final_hidden: B×N"]
-
-  %% === Input を紫枠 ===
-  subgraph IN["Inputs"]
-    direction LR
-    A
-  end
- 
-  %% === Outputs をサブグラフで紫枠 ===
-  subgraph OUT["Outputs"]
-    direction LR
-    H
-    I
-  end
-
-  %% サブグラフの枠線を紫に
-  style IN stroke:#8b5cf6,stroke-width:3px;
-  style OUT stroke:#8b5cf6,stroke-width:3px;
-```
 ```mermaid
 flowchart TD
-  %% ===== Inputs =====
-  subgraph IN["Inputs"]
-    direction LR
-    A["frames (B×T×H×W×C)"]
-    Adj["adjacency (B×T×N×N) / None"]
-    H0["hidden_state (B×N×H) / None"]
+  %% ===== 左：Title =====
+  subgraph L["LGTCN"]
+    direction TB
+    LA["frames <br> (B×T×H×W×C)"]
+      --> LB["CNN<br>→(B·T)×128×8×8"]
+      --> LC["reshape/permute <br>→ B×T×64×128"]
+      --> LD["encoder <br>(128→H) → B×T×64×H"]
+      --> LF["LTCNLayer:<br>(h_t, x_t)→ h_{t+1}"]
+      --> LG["decoder<br>(h_{t+1}) → B×2"]
+    LG --> LH["time-stacked controls: B×T×2"]
+    LF --> LI["final_hidden: B×N"]
+    subgraph LIN["Inputs"]
+      direction LR
+      LA
+    end
+    subgraph LOUT["Outputs"]
+      direction LR
+      LH
+      LI
+    end
   end
 
-  %% ===== Pipeline =====
-  A --> B["CNN → (B·T)×128×8×8"]
-  B --> C["reshape/permute → B×T×64×128"]
-  C --> D["node_encoder (128→H) → B×T×64×H"]
-  Adj --> H["LGTCN(x_t, u_t, S_powers) → x_{t+1}"]
-  H0 --"x_t"--> H
-  D --"u_t"--> H
+  %% ===== 右：Title 2 =====
+  subgraph R["LTCN"]
+    direction TB
+    RIN["Inputs"]:::io
+    RA["frames (B×T×H×W×C)"]:::io
+    RADJ["adjacency (B×T×N×N)/None"]:::io
+    RH0["hidden_state (B×N×H)/None"]:::io
 
-  %% ===== Decode =====
-  H --> P["mean over nodes → (B×H)"]
-  P --> Q["control_decoder → (B×2)"]
+    RA --> RB["CNN → (B·T)×128×8×8"]
+    RB --> RC["reshape/permute → B×T×64×128"]
+    RC --> RD["node_encoder (128→H) → B×T×64×H"]
+    RH0 -- "x_t" --> RH["LGTCN(x_t, u_t, S_powers) → x_{t+1}"]
+    RD -- "u_t" --> RH
+    RADJ -. "S_powers" .-> RH
+    RH --> RQ["control_decoder → (B×2)"]
+    subgraph RIN["Inputs"]
+      direction LR
+      RA
+      RADJ
+      RH0
+    end
 
-  %% ===== Outputs =====
-  subgraph OUT["Outputs"]
-    direction LR
-    O1["controls (B×T×2)"]
-    O2["final_hidden (B×N×H)"]
+    subgraph ROUT["Outputs"]
+      direction LR
+      RO1["controls (B×T×2)"]
+      RO2["final_hidden (B×N×H)"]
+    end
+    RQ --> RO1
+    RH --> RO2
   end
 
-  Q --> O1
-  H --> O2
-
-  %% ===== Styling =====
-  style IN stroke:#8b5cf6,stroke-width:3px,fill:#ffffff,color:#111;
-  style OUT stroke:#8b5cf6,stroke-width:3px,fill:#ffffff,color:#111;
-
+  %% スタイル
+  classDef io stroke:#8b5cf6,stroke-width:3px,color:#fff;
+  class LIN,LOUT,RIN,ROUT io;
 ```
 
