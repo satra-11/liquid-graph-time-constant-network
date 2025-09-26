@@ -5,21 +5,23 @@ This repository provides a reference implementation of the Liquid-Graph Time-Con
 Set up the project with **either** of the following methods, depending on the tools you prefer.
 ### 1. pip + venv
 ```bash
-git clone https://github.com/satra-11/liquid-graph-time-constant-network .
+git clone https://github.com/satra-11/liquid-graph-time-constant-network
+cd liquid-graph-time-constant-network
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.lock
 ```
 ### 2. Rye
 ```bash
-git clone https://github.com/satra-11/liquid-graph-time-constant-network .
+git clone https://github.com/satra-11/liquid-graph-time-constant-network
+cd liquid-graph-time-constant-network
 rye sync
 ```
 # Commands
 ### 1. Training
 Start training by executing a command below. The results are generated at /driving_results folder.
 ```bash
-python3 ./src/scripts/train_driving.py
+python3 /src/scripts/train_driving.py
 ```
 
 # Directory Structure
