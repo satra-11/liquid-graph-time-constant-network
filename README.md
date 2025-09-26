@@ -26,7 +26,7 @@ python3 ./src/scripts/train_driving.py
 
 The `scripts/train_driving.py` script follows the workflow below to train and evaluate the LGTCN and LTCN models.
 ### LTCN Model
-```mermaid
+```mermaid 
 flowchart TD
   A["frames <br> (B×T×H×W×C)"]
     --> B["CNN<br>→(B·T)×128×8×8"]
@@ -43,7 +43,7 @@ flowchart TD
     direction LR
     A
   end
-
+ 
   %% === Outputs をサブグラフで紫枠 ===
   subgraph OUT["Outputs"]
     direction LR
@@ -54,5 +54,42 @@ flowchart TD
   %% サブグラフの枠線を紫に
   style IN stroke:#8b5cf6,stroke-width:3px;
   style OUT stroke:#8b5cf6,stroke-width:3px;
+```
+```mermaid
+flowchart TD
+  %% ===== Inputs =====
+  subgraph IN["Inputs"]
+    direction LR
+    A["frames (B×T×H×W×C)"]
+    Adj["adjacency (B×T×N×N) / None"]
+    H0["hidden_state (B×N×H) / None"]
+  end
+
+  %% ===== Pipeline =====
+  A --> B["CNN → (B·T)×128×8×8"]
+  B --> C["reshape/permute → B×T×64×128"]
+  C --> D["node_encoder (128→H) → B×T×64×H"]
+  Adj --> H["LGTCN(x_t, u_t, S_powers) → x_{t+1}"]
+  H0 --"x_t"--> H
+  D --"u_t"--> H
+
+  %% ===== Decode =====
+  H --> P["mean over nodes → (B×H)"]
+  P --> Q["control_decoder → (B×2)"]
+
+  %% ===== Outputs =====
+  subgraph OUT["Outputs"]
+    direction LR
+    O1["controls (B×T×2)"]
+    O2["final_hidden (B×N×H)"]
+  end
+
+  Q --> O1
+  H --> O2
+
+  %% ===== Styling =====
+  style IN stroke:#8b5cf6,stroke-width:3px,fill:#ffffff,color:#111;
+  style OUT stroke:#8b5cf6,stroke-width:3px,fill:#ffffff,color:#111;
+
 ```
 
