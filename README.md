@@ -28,7 +28,7 @@ The `scripts/train_driving.py` script follows the workflow below to train and ev
 ```mermaid
 flowchart TD
   %% ===== 左：Title =====
-  subgraph L["LGTCN"]
+  subgraph L["LTCN"]
     direction TB
     LA["frames <br> (B×T×H×W×C)"]
       --> LB["CNN<br>→(B·T)×128×8×8"]
@@ -50,7 +50,7 @@ flowchart TD
   end
 
   %% ===== 右：Title 2 =====
-  subgraph R["LTCN"]
+  subgraph R["LGTCN"]
     direction TB
     RIN["Inputs"]:::io
     RA["frames (B×T×H×W×C)"]:::io
