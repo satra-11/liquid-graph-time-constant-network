@@ -22,6 +22,23 @@ Start training by executing a command below. The results are generated at /drivi
 python3 ./src/scripts/train_driving.py
 ```
 
+# Directory Structure
+```
+/Users/satron/Desktop/lgtcn/
+├───pyproject.toml
+├───README.md
+├───requirements-dev.lock
+├───requirements.lock
+├───driving_results/
+├───scripts/
+├───src/
+│   ├───layers/
+│   ├───models/
+│   ├───tasks/
+│   └───utils/
+└───test/
+```
+
 # Model Structures
 
 The `scripts/train_driving.py` script follows the workflow below to train and evaluate the LGTCN and LTCN models.
