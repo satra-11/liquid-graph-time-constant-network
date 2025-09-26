@@ -29,28 +29,24 @@ The `scripts/train_driving.py` script follows the workflow below to train and ev
 ```mermaid
 graph TD
     A[Start] --> B[Setup<br>Parse Args, Set Seed, Create Dirs];
-    B --> C[Create Dataset<br>create_dataset()];
+    B --> C["Create Dataset<br>create_dataset()"];
     C --> D[Split Data & Create DataLoaders<br>Train/Val/Test Sets];
     D --> E{Create Models};
     E --> F_LGTCN[LGTCN Model];
     E --> F_LTCN[LTCN Model];
 
     subgraph Training Phase
-        F_LGTCN --> G_LGTCN[Train LGTCN<br>train_model()];
-        F_LTCN --> G_LTCN[Train LTCN<br>train_model()];
+        F_LGTCN --> G_LGTCN["Train LGTCN<br>train_model()"];
+        F_LTCN --> G_LTCN["Train LTCN<br>train_model()"];
     end
 
     G_LGTCN & G_LTCN --> H[Plot Training Curves<br>Save to training_curves.png];
 
     subgraph Evaluation Phase
-        H --> I[Evaluate Models on Test Set<br>evaluate_networks()];
+        H --> I["Evaluate Models on Test Set<br>evaluate_networks()"];
     end
     
     I --> J[Save All Results];
-    J --> K[Models (.pth)];
-    J --> L[Training Info (.json)];
-    J --> M[Comparison Results (.json)];
-    J --> N[Comparison Plots (.png)];
 
     J --> O[Print Summary to Console];
     O --> P[End];
