@@ -90,4 +90,4 @@ class LGTCNController(nn.Module):
         final_hidden = current_hidden
         attentions = torch.stack(attentions, dim=1)
         
-        return controls, final_hidden, attentions
+        return controls, final_hidden
