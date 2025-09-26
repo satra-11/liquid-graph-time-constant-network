@@ -15,8 +15,8 @@ pip install -r requirements.lock
 git clone https://github.com/satra-11/liquid-graph-time-constant-network .
 rye sync
 ```
-### Commands
-#### 1. Training
+# Commands
+### 1. Training
 Start training by executing a command below. The results are generated at /driving_results folder.
 ```bash
 python3 ./src/scripts/train_driving.py
