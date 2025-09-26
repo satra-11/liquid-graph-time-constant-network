@@ -22,54 +22,37 @@ Start training by executing a command below. The results are generated at /drivi
 python3 ./src/scripts/train_driving.py
 ```
 
-## Training Workflow
+# Model Structures
 
 The `scripts/train_driving.py` script follows the workflow below to train and evaluate the LGTCN and LTCN models.
-
+### LTCN Model
 ```mermaid
-graph TD
-    A[Start] --> C["Create Dataset<br>create_dataset()"];
-    C --> D["Split Data & Create DataLoaders<br>Train/Val/Test Sets"];
-    D --> E{Create Models};
-    E --> F_LGTCN[LGTCN Model];
-    E --> F_LTCN[LTCN Model];
+flowchart TD
+  A["frames <br> (B×T×H×W×C)"]
+    --> B["CNN<br>→(B·T)×128×8×8"]
+    --> C["reshape/permute <br>→ B×T×64×128"]
+    --> D["encoder <br>(128→H) → B×T×64×H"]
+    --> F["LTCNLayer:<br>  (h_t, x_t)→ h_{t+1}"]
+    --> G["decoder<br>(h_{t+1}) → B×2"]
 
-    subgraph Training Phase
-        F_LGTCN --> G_LGTCN["Train LGTCN<br>train_model()"];
-        F_LTCN --> G_LTCN["Train LTCN<br>train_model()"];
-    end
+  G --> H["time-stacked controls: B×T×2"]
+  F --> I["final_hidden: B×N"]
 
-    G_LGTCN & G_LTCN --> H["Plot Training Curves<br>Save to training_curves.png"];
+  %% === Input を紫枠 ===
+  subgraph IN["Inputs"]
+    direction LR
+    A
+  end
 
-    subgraph Evaluation Phase
-        H --> I["Evaluate Models on Test Set<br>evaluate_networks()"];
-    end
-    
-    I --> J[Save All Results];
-    J --> K["Models (.pth)"];
-    J --> L["Training Info (.json)"];
-    J --> M["Comparison Results (.json)"];
-    J --> N["Comparison Plots (.png)"];
+  %% === Outputs をサブグラフで紫枠 ===
+  subgraph OUT["Outputs"]
+    direction LR
+    H
+    I
+  end
 
-    J --> O[Print Summary to Console];
-    O --> P[End];
-
-    %% Style Definitions (Purple Theme)
-    classDef io fill:#F5F5F5,color:#36454F,stroke:#B0B0B0,stroke-width:2px;
-    classDef models fill:#E6E6FA,color:#36454F,stroke:#6A0DAD,stroke-width:2px;
-    classDef phase fill:#6A0DAD,color:#FFFFFF,stroke:#483D8B,stroke-width:2px,font-weight:bold;
-    classDef startend fill:#483D8B,color:#FFFFFF,stroke:#36454F,stroke-width:2px;
-
-    class A,P startend;
-    class B,C,D,J,K,L,M,N,O io;
-    class E,F_LGTCN,F_LTCN models;
-    class G_LGTCN,H,I phase;
-```
-
-#### 2. Testing
-Unit tests are available by following command
-```bash
-python -m pytest ./test
-```
+  %% サブグラフの枠線を紫に
+  style IN stroke:#8b5cf6,stroke-width:3px;
+  style OUT stroke:#8b5cf6,stroke-width:3px;
 ```
 
