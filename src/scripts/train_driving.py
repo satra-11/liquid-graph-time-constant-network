@@ -61,7 +61,7 @@ def create_dataset(
 
 
 def train_model(
-    model: DrivingController,
+    model: LTCNController | LGTCNController,
     train_loader: DataLoader,
     val_loader: DataLoader,
     num_epochs: int = 100,
