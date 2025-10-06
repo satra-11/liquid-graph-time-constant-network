@@ -31,7 +31,7 @@ python3 /src/scripts/train_driving.py
 ├───requirements-dev.lock
 ├───requirements.lock
 ├───driving_results/
-├───hdd/  # This training data is not included in this repository
+├───hdd/  # The training data is not included in this repository
 ├───scripts/
 ├───src/
 │   ├───layers/
