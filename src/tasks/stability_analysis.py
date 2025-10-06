@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 import json
 
-from models import LGTCNController
+from src.models import LGTCNController
 
 
 @dataclass

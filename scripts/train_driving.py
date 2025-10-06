@@ -15,13 +15,12 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, random_split
 import matplotlib.pyplot as plt
 
-from tasks import (
-    AutonomousDrivingTask, 
+from src.tasks import (
     CorruptionConfig,
     NetworkComparator,
     DrivingDataset
 )
-from models import LGTCNController, LTCNController
+from src.models import LGTCNController, LTCNController
 
 
 def set_seed(seed: int):

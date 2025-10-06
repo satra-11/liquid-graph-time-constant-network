@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from utils import GraphFilter
+from src.utils import GraphFilter
 
 
 class CfGCNLayer(nn.Module):
