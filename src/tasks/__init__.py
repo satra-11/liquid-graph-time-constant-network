@@ -1,7 +1,8 @@
 from .autonomous_driving import (
     AutonomousDrivingTask, 
     VideoProcessor, 
-    CorruptionConfig
+    CorruptionConfig,
+    DrivingDataset
 )
 from .stability_analysis import (
     StabilityAnalyzer, 
@@ -16,4 +17,5 @@ __all__ = [
     "StabilityAnalyzer",
     "NetworkComparator",
     "StabilityMetrics",
+    "DrivingDataset"
 ]
