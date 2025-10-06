@@ -62,7 +62,10 @@ def train_model(
             
             # 汚損フレームで予測
             predictions, _ = model(corrupted_frames)
-            loss = criterion(predictions, targets)
+            
+            # ターゲットからステアリング値のみを抽出
+            target_steering = targets[:, :, 0].unsqueeze(-1)
+            loss = criterion(predictions, target_steering)
             
             loss.backward()
             optimizer.step()
@@ -83,7 +86,8 @@ def train_model(
                 targets = targets.to(device)
                 
                 predictions, _ = model(corrupted_frames)
-                loss = criterion(predictions, targets)
+                target_steering = targets[:, :, 0].unsqueeze(-1)
+                loss = criterion(predictions, target_steering)
                 epoch_val_loss += loss.item()
         
         avg_val_loss = epoch_val_loss / len(val_loader)

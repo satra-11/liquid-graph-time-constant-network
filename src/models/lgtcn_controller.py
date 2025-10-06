@@ -39,7 +39,7 @@ class LGTCNController(nn.Module):
             nn.ReLU(),
             nn.Linear(128, 64),
             nn.ReLU(),
-            nn.Linear(64, 2)  # steering, speed
+            nn.Linear(64, 1)  # steering
         )
         
     def forward(

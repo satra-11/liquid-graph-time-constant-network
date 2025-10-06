@@ -134,14 +134,15 @@ class StabilityAnalyzer:
                 clean_pred, _ = model(clean_data, adjacency)
             else:
                 clean_pred, _ = model(clean_data)
-            clean_loss = nn.MSELoss()(clean_pred, targets)
+            target_steering = targets[..., 0].unsqueeze(-1)
+            clean_loss = nn.MSELoss()(clean_pred, target_steering)
             
             # 汚損データでの予測
             if isinstance(model, LGTCNController):
                 corrupted_pred, _ = model(corrupted_data, adjacency)
             else:
                 corrupted_pred, _ = model(corrupted_data)
-            corrupted_loss = nn.MSELoss()(corrupted_pred, targets)
+            corrupted_loss = nn.MSELoss()(corrupted_pred, target_steering)
             
             # 耐性指標（性能劣化の少なさ）
             resilience = 1.0 - (corrupted_loss - clean_loss) / (clean_loss + 1e-8)
@@ -168,11 +169,12 @@ class StabilityAnalyzer:
         steps: int = 10
     ) -> float:
         """回復時間を推定"""
+        target_steering = targets[..., 0].unsqueeze(-1)
         if isinstance(model, LGTCNController):
             clean_pred, _ = model(clean_data, adjacency)
         else:
             clean_pred, _ = model(clean_data)
-        clean_loss = nn.MSELoss()(clean_pred, targets)
+        clean_loss = nn.MSELoss()(clean_pred, target_steering)
         
         for step in range(steps):
             # 徐々に汚損を減らす
@@ -183,7 +185,7 @@ class StabilityAnalyzer:
                 pred, _ = model(mixed_data, adjacency)
             else:
                 pred, _ = model(mixed_data)
-            loss = nn.MSELoss()(pred, targets)
+            loss = nn.MSELoss()(pred, target_steering)
             
             # クリーンデータのlossに近づいたら回復したとみなす
             if abs(loss - clean_loss) / clean_loss < 0.1:
@@ -337,8 +339,9 @@ class NetworkComparator:
                 pred_clean, _ = model(clean_data)
                 pred_corrupted, _ = model(corrupted_data)
             
-            control_mse = nn.MSELoss()(pred_corrupted, targets).item()
-            control_mae = nn.L1Loss()(pred_corrupted, targets).item()
+            target_steering = targets[..., 0].unsqueeze(-1)
+            control_mse = nn.MSELoss()(pred_corrupted, target_steering).item()
+            control_mae = nn.L1Loss()(pred_corrupted, target_steering).item()
         
         # 隠れ状態安定性
         stability_metrics = self.analyzer.analyze_hidden_state_stability(
