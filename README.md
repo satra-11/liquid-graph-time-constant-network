@@ -53,8 +53,8 @@ flowchart TD
       --> LC["reshape/permute <br>→ B×T×64×128"]
       --> LD["encoder <br>(128→H) → B×T×64×H"]
       --> LF["LTCNLayer:<br>(h_t, x_t)→ h_{t+1}"]
-      --> LG["decoder<br>(h_{t+1}) → B×2"]
-    LG --> LH["time-stacked controls: B×T×2"]
+      --> LG["decoder<br>(h_{t+1}) → B×1"]
+    LG --> LH["time-stacked controls: B×T×1"]
     LF --> LI["final_hidden: B×N"]
     subgraph LIN["Inputs"]
       direction LR
@@ -81,7 +81,7 @@ flowchart TD
     RH0 -- "x_t" --> RH["LGTCN(x_t, u_t, S_powers) → x_{t+1}"]
     RD -- "u_t" --> RH
     RADJ -. "S_powers" .-> RH
-    RH --> RQ["control_decoder → (B×2)"]
+    RH --> RQ["control_decoder → (B×1)"]
     subgraph RIN["Inputs"]
       direction LR
       RA
@@ -91,7 +91,7 @@ flowchart TD
 
     subgraph ROUT["Outputs"]
       direction LR
-      RO1["controls (B×T×2)"]
+      RO1["controls (B×T×1)"]
       RO2["final_hidden (B×N×H)"]
     end
     RQ --> RO1
