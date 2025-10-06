@@ -25,12 +25,13 @@ python3 /src/scripts/train_driving.py
 ```
 
 # Directory Structure
-```
+```yaml
 ├───pyproject.toml
 ├───README.md
 ├───requirements-dev.lock
 ├───requirements.lock
 ├───driving_results/
+├───hdd/  # This training data is not included in this repository
 ├───scripts/
 ├───src/
 │   ├───layers/
@@ -39,7 +40,7 @@ python3 /src/scripts/train_driving.py
 │   └───utils/
 └───test/
 ```
-
+※ For HDD see [here](https://github.com/satra-11/liquid-graph-time-constant-network/blob/main/README.md#dataset).
 # Model Structures
 
 The `scripts/train_driving.py` script follows the workflow below to train and evaluate the LGTCN and LTCN models.
