@@ -103,3 +103,21 @@ flowchart TD
   class LIN,LOUT,RIN,ROUT io;
 ```
 
+# Dataset
+
+This project utilizes the [Honda Research Institute Driving Dataset (HDD)](https://usa.honda-ri.com/datasets) for training and evaluation.The data can be obtained [here](https://usa.honda-ri.com/hdd). 
+
+The `scripts/train_driving.py` script expects the dataset to be organized in the `hdd/` directory with the following structure:
+
+```
+hdd/
+├───camera/
+│   ├───<sequence_0>/
+│   │   ├───00000.jpg
+│   │   └───...
+│   └───<sequence_n>/
+└───target/
+    ├───<sequence_0>.npy
+    └───<sequence_n>.npy
+```
+
