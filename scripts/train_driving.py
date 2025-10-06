@@ -7,17 +7,19 @@ import argparse
 import random
 from pathlib import Path
 import json
+import os
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import DataLoader, TensorDataset
+from torch.utils.data import DataLoader, random_split
 import matplotlib.pyplot as plt
 
 from tasks import (
     AutonomousDrivingTask, 
     CorruptionConfig,
-    NetworkComparator
+    NetworkComparator,
+    DrivingDataset
 )
 from models import LGTCNController, LTCNController
 
@@ -27,37 +29,6 @@ def set_seed(seed: int):
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
-
-
-def create_dataset(
-    num_sequences: int = 1000,
-    sequence_length: int = 20,
-    batch_size: int = 32,
-    corruption_config: CorruptionConfig = None
-):
-    """訓練・テストデータセットを作成"""
-    task = AutonomousDrivingTask(
-        frame_height=64,
-        frame_width=64,
-        sequence_length=sequence_length,
-        corruption_config=corruption_config or CorruptionConfig()
-    )
-    
-    all_clean_frames = []
-    all_corrupted_frames = []
-    all_targets = []
-    
-    for _ in range(num_sequences):
-        clean_frames, corrupted_frames, targets = task.generate_sequence(batch_size=1)
-        all_clean_frames.append(clean_frames.squeeze(0))
-        all_corrupted_frames.append(corrupted_frames.squeeze(0))
-        all_targets.append(targets.squeeze(0))
-    
-    clean_frames = torch.stack(all_clean_frames)
-    corrupted_frames = torch.stack(all_corrupted_frames)
-    targets = torch.stack(all_targets)
-    
-    return clean_frames, corrupted_frames, targets
 
 
 def train_model(
@@ -161,6 +132,7 @@ def main():
     parser.add_argument("--hidden-dim", type=int, default=64)
     parser.add_argument("--K", type=int, default=2)
     parser.add_argument("--corruption-rate", type=float, default=0.2)
+    parser.add_argument("--data-dir", type=str, default="./hdd")
     parser.add_argument("--save-dir", type=str, default="./driving_results")
     parser.add_argument("--device", type=str, default="auto")
     
@@ -182,48 +154,31 @@ def main():
     save_dir.mkdir(parents=True, exist_ok=True)
     
     # データセット作成
-    print("Creating dataset...")
+    print("Loading dataset from HDD...")
     corruption_config = CorruptionConfig(
         missing_rate=args.corruption_rate,
         whiteout_rate=args.corruption_rate * 0.5,
         noise_level=args.corruption_rate * 0.1
     )
     
-    clean_frames, corrupted_frames, targets = create_dataset(
-        num_sequences=args.num_sequences,
+    full_dataset = DrivingDataset(
+        camera_dir=os.path.join(args.data_dir, 'camera'),
+        target_dir=os.path.join(args.data_dir, 'target'),
         sequence_length=args.sequence_length,
-        batch_size=1,
         corruption_config=corruption_config
     )
     
     # 訓練・検証・テストに分割
-    total_size = len(clean_frames)
+    total_size = len(full_dataset)
     train_size = int(0.7 * total_size)
     val_size = int(0.15 * total_size)
     test_size = total_size - train_size - val_size
     
-    indices = torch.randperm(total_size)
-    train_indices = indices[:train_size]
-    val_indices = indices[train_size:train_size + val_size]
-    test_indices = indices[train_size + val_size:]
+    train_dataset, val_dataset, test_dataset = random_split(
+        full_dataset, [train_size, val_size, test_size]
+    )
     
     # データローダー作成
-    train_dataset = TensorDataset(
-        clean_frames[train_indices],
-        corrupted_frames[train_indices],
-        targets[train_indices]
-    )
-    val_dataset = TensorDataset(
-        clean_frames[val_indices],
-        corrupted_frames[val_indices],
-        targets[val_indices]
-    )
-    test_dataset = TensorDataset(
-        clean_frames[test_indices],
-        corrupted_frames[test_indices],
-        targets[test_indices]
-    )
-    
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False)
     test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)
@@ -282,20 +237,20 @@ def main():
     plt.savefig(save_dir / "training_curves.png")
     plt.show()
     
-    # テストデータで評価
-    print("Evaluating networks...")
-    test_data = {
-        'clean_frames': clean_frames[test_indices],
-        'corrupted_frames': corrupted_frames[test_indices],
-        'targets': targets[test_indices]
-    }
-    
-    results = evaluate_networks(lgtcn_model, ltcn_model, test_data, device)
-    
-    # 結果を保存
-    comparator = NetworkComparator(device)
-    comparator.save_results(results, save_dir / "comparison_results.json")
-    comparator.visualize_comparison(results, save_dir / "comparison_plots.png")
+    # # テストデータで評価
+    # print("Evaluating networks...")
+    # test_data = {
+    #     'clean_frames': clean_frames[test_indices],
+    #     'corrupted_frames': corrupted_frames[test_indices],
+    #     'targets': targets[test_indices]
+    # }
+    # 
+    # results = evaluate_networks(lgtcn_model, ltcn_model, test_data, device)
+    # 
+    # # 結果を保存
+    # comparator = NetworkComparator(device)
+    # comparator.save_results(results, save_dir / "comparison_results.json")
+    # comparator.visualize_comparison(results, save_dir / "comparison_plots.png")
     
     # モデル保存
     torch.save(lgtcn_model.state_dict(), save_dir / "lgtcn_model.pth")
@@ -315,11 +270,11 @@ def main():
     
     print(f"Training completed! Results saved to {save_dir}")
     
-    # 結果サマリー表示
-    comparison = results['comparison']
-    print("\n=== Comparison Summary ===")
-    for metric, data in comparison['winner_by_metric'].items():
-        print(f"{metric}: {data['winner']} wins (LGTCN: {data['lgtcn_avg']:.4f}, LTCN: {data['ltcn_avg']:.4f})")
+    # # 結果サマリー表示
+    # comparison = results['comparison']
+    # print("\n=== Comparison Summary ===")
+    # for metric, data in comparison['winner_by_metric'].items():
+    #     print(f"{metric}: {data['winner']} wins (LGTCN: {data['lgtcn_avg']:.4f}, LTCN: {data['ltcn_avg']:.4f})")
 
 
 if __name__ == "__main__":
