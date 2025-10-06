@@ -117,37 +117,6 @@ class AutonomousDrivingTask:
         self.road_width = 0.3  # 道路幅（画像幅に対する比率）
         self.lane_width = 0.05  # 車線幅
         
-    def generate_synthetic_road_frame(self, t: int, vehicle_pos: float = 0.5) -> torch.Tensor:
-        """合成道路フレームを生成"""
-        frame = torch.zeros(self.frame_height, self.frame_width, 3)
-        
-        # 道路の描画
-        road_center = int(self.frame_width * 0.5)
-        road_half_width = int(self.frame_width * self.road_width / 2)
-        
-        # 道路面（グレー）
-        frame[:, road_center-road_half_width:road_center+road_half_width, :] = 0.5
-        
-        # 車線（白線）
-        lane_pos1 = road_center - int(self.frame_width * self.lane_width / 2)
-        lane_pos2 = road_center + int(self.frame_width * self.lane_width / 2)
-        
-        # 破線の車線を描画
-        for y in range(0, self.frame_height, 20):
-            if (y + t) % 40 < 20:  # 破線効果
-                frame[y:min(y+10, self.frame_height), lane_pos1:lane_pos1+2, :] = 1.0
-                frame[y:min(y+10, self.frame_height), lane_pos2:lane_pos2+2, :] = 1.0
-        
-        # 車両の描画（簡単な矩形）
-        vehicle_x = int(self.frame_width * vehicle_pos)
-        vehicle_y = int(self.frame_height * 0.8)
-        vehicle_size = 8
-        
-        frame[vehicle_y-vehicle_size:vehicle_y+vehicle_size, 
-              vehicle_x-vehicle_size:vehicle_x+vehicle_size, 0] = 1.0  # 赤い車両
-        
-        return frame
-    
     def generate_sequence(self, batch_size: int = 1) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """映像シーケンスとターゲット制御信号を生成"""
         clean_frames = []
@@ -204,7 +173,6 @@ class AutonomousDrivingTask:
         # パッチ特徴抽出
         patches = frames.unfold(2, patch_size, patch_size).unfold(3, patch_size, patch_size)
         patches = patches.contiguous().view(B, T, patches_h, patches_w, patch_size * patch_size * C)
-        patch_features = patches.mean(dim=-1)  # 各パッチの平均特徴
         
         # 空間的隣接性に基づく隣接行列
         adjacency = torch.zeros(B, T, num_nodes, num_nodes)
