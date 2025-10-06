@@ -71,7 +71,7 @@ six==1.17.0
     # via python-dateutil
 sympy==1.14.0
     # via torch
-torch==2.7.1
+torch==2.8.0
     # via lgtcn
 tqdm==4.67.1
     # via lgtcn
