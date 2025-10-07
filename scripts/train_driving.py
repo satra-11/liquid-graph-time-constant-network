@@ -110,7 +110,7 @@ def evaluate_networks(
     test_dict = {
         'clean_frames': test_data['clean_frames'],
         'targets': test_data['targets'],
-        'adjacency': None  # 今回は簡単化
+        'adjacency': None 
     }
     
     print("Comparing LGTCN and LTCN...")

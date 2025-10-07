@@ -258,7 +258,6 @@ class NetworkComparator:
             # データ準備
             from .autonomous_driving import VideoProcessor, CorruptionConfig
             config = CorruptionConfig(
-                missing_rate=corruption_level,
                 whiteout_rate=corruption_level * 0.5,
                 noise_level=corruption_level * 0.1
             )
