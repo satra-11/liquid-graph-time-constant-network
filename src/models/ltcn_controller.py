@@ -13,11 +13,13 @@ class LTCNController(nn.Module):
         frame_height: int = 64,
         frame_width: int = 64,
         hidden_dim: int = 64,
+        output_dim: int = 1,
     ):
         super().__init__()
         self.frame_height = frame_height
         self.frame_width = frame_width
         self.hidden_dim = hidden_dim
+        self.output_dim = output_dim
         self.node_encoder = nn.Linear(128, hidden_dim)
         
         self.feature_extractor = nn.Sequential(
@@ -39,7 +41,7 @@ class LTCNController(nn.Module):
             nn.ReLU(),
             nn.Linear(128, 64),
             nn.ReLU(),
-            nn.Linear(64, 1)  # steering
+            nn.Linear(64, self.output_dim)
         )
         
     def forward(

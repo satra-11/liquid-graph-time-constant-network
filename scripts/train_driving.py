@@ -56,17 +56,13 @@ def train_model(
         for batch_idx, (clean_frames, corrupted_frames, targets) in enumerate(train_loader):
             clean_frames = clean_frames.to(device)
             corrupted_frames = corrupted_frames.to(device)
-            targets = targets.to(device)
+            targets = targets.to(device) # [B, 20]
             
             optimizer.zero_grad()
             
-            # 汚損フレームで予測
             predictions, _ = model(corrupted_frames)
             
-            # ターゲットからステアリング値のみを抽出 (次元2を想定)
-            target_steering = targets[:, 0].unsqueeze(-1)
-            # 予測の最後のタイムステップと比較
-            loss = criterion(predictions[:, -1, :], target_steering)
+            loss = criterion(predictions[:, -1, :], targets)
             
             loss.backward()
             optimizer.step()
@@ -84,13 +80,12 @@ def train_model(
             for clean_frames, corrupted_frames, targets in val_loader:
                 clean_frames = clean_frames.to(device)
                 corrupted_frames = corrupted_frames.to(device)
-                targets = targets.to(device)
+                targets = targets.to(device) # [B, 20]
                 
                 predictions, _ = model(corrupted_frames)
-                # ターゲットからステアリング値のみを抽出 (次元2を想定)
-                target_steering = targets[:, 0].unsqueeze(-1)
+                
                 # 予測の最後のタイムステップと比較
-                loss = criterion(predictions[:, -1, :], target_steering)
+                loss = criterion(predictions[:, -1, :], targets)
                 epoch_val_loss += loss.item()
         
         avg_val_loss = epoch_val_loss / len(val_loader)
@@ -195,12 +190,14 @@ def main():
         frame_height=64,
         frame_width=64,
         hidden_dim=args.hidden_dim,
+        output_dim=20,
         K=args.K
     )
     
     ltcn_model = LTCNController(
         frame_height=64,
         frame_width=64,
+        output_dim=20,
         hidden_dim=args.hidden_dim,
     )
     
