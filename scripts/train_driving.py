@@ -16,10 +16,10 @@ from torch.utils.data import DataLoader, random_split
 import matplotlib.pyplot as plt
 
 from src.tasks import (
-    CorruptionConfig,
     NetworkComparator,
     DrivingDataset
 )
+from src.configs import CorruptionConfig
 from src.models import LGTCNController, LTCNController
 
 

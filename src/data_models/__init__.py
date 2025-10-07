@@ -1,3 +1,3 @@
-from stability_metrics import StabilityMetrics
+from .stability_metrics import StabilityMetrics
 
 __all__ = ["StabilityMetrics"]
