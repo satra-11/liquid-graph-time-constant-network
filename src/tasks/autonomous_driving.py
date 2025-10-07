@@ -7,7 +7,7 @@ from glob import glob
 from PIL import Image
 import torchvision.transforms as transforms
 from torch.utils.data import Dataset
-from src.types import CorruptionConfig
+from src.configs import CorruptionConfig
 
     
 class VideoProcessor:

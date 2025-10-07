@@ -6,7 +6,7 @@ from typing import Dict, List, Optional, Any
 import matplotlib.pyplot as plt
 import json
 from src.models import LGTCNController
-from src.types import StabilityMetrics
+from src.data_models import StabilityMetrics
 
 class StabilityAnalyzer:
     """ネットワークの安定性分析クラス"""
