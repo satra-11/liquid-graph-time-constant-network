@@ -1,35 +1,12 @@
+from matplotlib.path import Path
 import torch
 import torch.nn as nn
 import numpy as np
 from typing import Dict, List, Optional, Any
 import matplotlib.pyplot as plt
-from dataclasses import dataclass
-from pathlib import Path
 import json
-
 from src.models import LGTCNController
-
-
-@dataclass
-class StabilityMetrics:
-    """安定性メトリクス"""
-    # 制御精度
-    control_mse: float
-    control_mae: float
-    
-    # 内部状態の安定性
-    hidden_state_variance: float
-    hidden_state_drift: float
-    lyapunov_exponent: float
-    
-    # ロバストネス
-    corruption_resilience: float
-    recovery_time: float
-    
-    # 予測の一貫性
-    prediction_consistency: float
-    temporal_smoothness: float
-
+from src.types import StabilityMetrics
 
 class StabilityAnalyzer:
     """ネットワークの安定性分析クラス"""

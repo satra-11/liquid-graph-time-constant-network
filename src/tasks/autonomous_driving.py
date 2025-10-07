@@ -2,22 +2,13 @@ import torch
 import torch.nn.functional as F
 import numpy as np
 from typing import Optional
-from dataclasses import dataclass
 import os
 from glob import glob
 from PIL import Image
 import torchvision.transforms as transforms
 from torch.utils.data import Dataset
+from src.types import CorruptionConfig
 
-
-@dataclass
-class CorruptionConfig:
-    """映像データの欠損・白飛び設定"""
-    missing_rate: float = 0.1  # 欠損率
-    whiteout_rate: float = 0.05  # 白飛び率
-    noise_level: float = 0.02  # ノイズレベル
-    blur_kernel: int = 3  # ブラーカーネルサイズ
-    
     
 class VideoProcessor:
     """映像データ処理と欠損生成クラス"""
