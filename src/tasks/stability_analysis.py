@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import json
 from src.models import LGTCNController
 from src.data_models import StabilityMetrics
+from src.utils import add_whiteout
 
 class StabilityAnalyzer:
     """ネットワークの安定性分析クラス"""
@@ -146,12 +147,11 @@ class StabilityAnalyzer:
         steps: int = 10
     ) -> float:
         """回復時間を推定"""
-        target_steering = targets[..., 0].unsqueeze(-1)
         if isinstance(model, LGTCNController):
             clean_pred, _ = model(clean_data, adjacency)
         else:
             clean_pred, _ = model(clean_data)
-        clean_loss = nn.MSELoss()(clean_pred, target_steering)
+        clean_loss = nn.MSELoss()(clean_pred, targets)
         
         for step in range(steps):
             # 徐々に汚損を減らす
@@ -162,7 +162,7 @@ class StabilityAnalyzer:
                 pred, _ = model(mixed_data, adjacency)
             else:
                 pred, _ = model(mixed_data)
-            loss = nn.MSELoss()(pred, target_steering)
+            loss = nn.MSELoss()(pred, targets)
             
             # クリーンデータのlossに近づいたら回復したとみなす
             if abs(loss - clean_loss) / clean_loss < 0.1:
@@ -255,21 +255,13 @@ class NetworkComparator:
         for corruption_level in corruption_levels:
             print(f"Testing corruption level: {corruption_level}")
             
-            # データ準備
-            from .autonomous_driving import VideoProcessor, CorruptionConfig
-            config = CorruptionConfig(
-                whiteout_rate=corruption_level * 0.5,
-                noise_level=corruption_level * 0.1
-            )
-            processor = VideoProcessor(config)
-            
             clean_frames = test_data['clean_frames']
             targets = test_data['targets']
             adjacency = test_data.get('adjacency')
             
             # 汚損フレーム生成
             corrupted_frames = torch.stack([
-                processor.corrupt_frame(frame) for frame in clean_frames
+                add_whiteout(frame) for frame in clean_frames
             ])
             
             # LGTCNテスト
