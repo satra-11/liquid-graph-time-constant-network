@@ -82,7 +82,7 @@ flowchart TD
     RH0 -- "x_t" --> RH["LGTCN(x_t, u_t, S_powers) → x_{t+1}"]
     RD -- "u_t" --> RH
     RADJ -. "S_powers" .-> RH
-    RH --> RQ["control_decoder → (B×1)"]
+    RH --> RQ["control_decoder → (B×20)"]
     subgraph RIN["Inputs"]
       direction LR
       RA
@@ -92,7 +92,7 @@ flowchart TD
 
     subgraph ROUT["Outputs"]
       direction LR
-      RO1["controls (B×T×1)"]
+      RO1["controls (B×T×20)"]
       RO2["final_hidden (B×N×H)"]
     end
     RQ --> RO1
