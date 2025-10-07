@@ -15,8 +15,8 @@ class DrivingDataset(Dataset):
         camera_dir: str,
         target_dir: str,
         sequence_length: int,
-        frame_height: int = 64,
-        frame_width: int = 64,
+        frame_height: int = 224,
+        frame_width: int = 224,
     ):
         self.sequence_length = sequence_length
 
