@@ -1,8 +1,8 @@
 import torch
 import pytest
 
-from utils import compute_support_powers
-from layers import (LGTCNLayer, CfGCNLayer, LTCNLayer)
+from src.utils import compute_support_powers
+from src.layers import (LGTCNLayer, CfGCNLayer, LTCNLayer)
 
 
 @pytest.mark.parametrize("LayerCls", [LGTCNLayer, CfGCNLayer])
