@@ -135,6 +135,7 @@ def main():
     parser.add_argument("--data-dir", type=str, default="./hdd")
     parser.add_argument("--save-dir", type=str, default="./driving_results")
     parser.add_argument("--device", type=str, default="auto")
+    parser.add_argument("--target-sequence", type=str, default=None, help="Target sequence name for testing (e.g., 201702271017)")
     
     args = parser.parse_args()
     
@@ -160,6 +161,7 @@ def main():
         camera_dir=os.path.join(args.data_dir, 'camera'),
         target_dir=os.path.join(args.data_dir, 'target'),
         sequence_length=args.sequence_length,
+        target_sequence=args.target_sequence
     )
     
     # 訓練・検証・テストに分割

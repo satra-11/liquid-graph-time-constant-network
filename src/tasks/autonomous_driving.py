@@ -1,3 +1,4 @@
+from typing import Optional
 import torch
 import numpy as np
 import os
@@ -15,6 +16,7 @@ class DrivingDataset(Dataset):
         camera_dir: str,
         target_dir: str,
         sequence_length: int,
+        target_sequence: Optional[str] = None,
         frame_height: int = 224,
         frame_width: int = 224,
     ):
@@ -26,7 +28,10 @@ class DrivingDataset(Dataset):
         ])
 
         self.sequences = []
-        target_files = sorted(glob(os.path.join(target_dir, '*.npy')))
+        if target_sequence:
+            target_files = [os.path.join(target_dir, f"{target_sequence}.npy")]
+        else:
+            target_files = sorted(glob(os.path.join(target_dir, '*.npy')))
 
         for target_file in target_files:
             seq_name = os.path.basename(target_file).replace('.npy', '')
