@@ -19,7 +19,6 @@ from src.tasks import (
     NetworkComparator,
     DrivingDataset
 )
-from src.configs import CorruptionConfig
 from src.models import LGTCNController, LTCNController
 
 
@@ -156,17 +155,11 @@ def main():
     
     # データセット作成
     print("Loading dataset from HDD...")
-    corruption_config = CorruptionConfig(
-        missing_rate=args.corruption_rate,
-        whiteout_rate=args.corruption_rate * 0.5,
-        noise_level=args.corruption_rate * 0.1
-    )
     
     full_dataset = DrivingDataset(
         camera_dir=os.path.join(args.data_dir, 'camera'),
         target_dir=os.path.join(args.data_dir, 'target'),
         sequence_length=args.sequence_length,
-        corruption_config=corruption_config
     )
     
     # 訓練・検証・テストに分割

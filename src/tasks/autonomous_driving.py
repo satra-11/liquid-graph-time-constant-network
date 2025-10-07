@@ -75,7 +75,7 @@ class DrivingDataset(Dataset):
         clean_frames_tensor = clean_frames_tensor.permute(0, 2, 3, 1)
 
         # 汚損フレームを生成
-        corrupted_frames_tensor = add_whiteout(clean_frames_tensor.clone())
+        corrupted_frames_tensor = add_whiteout(frame=clean_frames_tensor.clone())
 
         # ターゲットを読み込む
         targets_full = np.load(selected_sequence['target'])
