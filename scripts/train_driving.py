@@ -52,13 +52,13 @@ def train_model(
         epoch_train_loss = 0.0
         
         for batch_idx, (frames, targets) in enumerate(train_loader):
-            frames = frames.to(device)# torch.Size([B, T, H, W, C])
+            frames = frames.to(device)# torch.Size([B, T, C, H, W])
             targets = targets.to(device)# torch.Size([B, 20])
 
             
             optimizer.zero_grad()
             
-            predictions, _ = model(frames)
+            predictions, _ = model(frames)# torch.Size([B, T, 20])
             
             loss = criterion(predictions[:, -1, :], targets)
             

@@ -74,9 +74,8 @@ class DrivingDataset(Dataset):
             img = Image.open(img_path).convert('RGB')
             frames.append(self.transform(img))
 
-        frames_tensor = torch.stack(frames) # (T, C, H, W)
-        # (T, H, W, C) に変換
-        frames = frames_tensor.permute(0, 2, 3, 1)
+        frames = torch.stack(frames)
+
 
         # ターゲットを読み込む
         targets_full = np.load(selected_sequence['target'])
