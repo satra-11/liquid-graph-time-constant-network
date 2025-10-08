@@ -52,10 +52,9 @@ def train_model(
         epoch_train_loss = 0.0
         
         for batch_idx, (frames, targets) in enumerate(train_loader):
-            frames = frames.to(device)
-            targets = targets.to(device) # torch.Size([B, 20])
-            print(frames.shape)  # torch.Size([B, 20, H, W, C])
-            print(targets.shape) # torch.Size([B, 20])
+            frames = frames.to(device)# torch.Size([B, T, H, W, C])
+            targets = targets.to(device)# torch.Size([B, 20])
+
             
             optimizer.zero_grad()
             
@@ -76,12 +75,11 @@ def train_model(
         epoch_val_loss = 0.0
         
         with torch.no_grad():
-            for clean_frames, corrupted_frames, targets in val_loader:
-                clean_frames = clean_frames.to(device)
-                corrupted_frames = corrupted_frames.to(device)
+            for frames, targets in val_loader:
+                frames = frames.to(device)
                 targets = targets.to(device)
                 
-                predictions, _ = model(corrupted_frames)
+                predictions, _ = model(frames)
                 
                 # 予測の最後のタイムステップと比較
                 loss = criterion(predictions[:, -1, :], targets)
