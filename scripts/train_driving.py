@@ -54,10 +54,12 @@ def train_model(
         for batch_idx, (frames, targets) in enumerate(train_loader):
             frames = frames.to(device)
             targets = targets.to(device) # torch.Size([B, 20])
+            print(frames.shape)  # torch.Size([B, 20, H, W, C])
+            print(targets.shape) # torch.Size([B, 20])
             
             optimizer.zero_grad()
             
-            predictions, _ = model(corrupted_frames)
+            predictions, _ = model(frames)
             
             loss = criterion(predictions[:, -1, :], targets)
             
@@ -77,7 +79,7 @@ def train_model(
             for clean_frames, corrupted_frames, targets in val_loader:
                 clean_frames = clean_frames.to(device)
                 corrupted_frames = corrupted_frames.to(device)
-                targets = targets.to(device) # [B, 20]
+                targets = targets.to(device)
                 
                 predictions, _ = model(corrupted_frames)
                 
