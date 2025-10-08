@@ -6,7 +6,6 @@ from glob import glob
 from PIL import Image
 import torchvision.transforms as transforms
 from torch.utils.data import Dataset
-from src.utils import add_whiteout
 
 class DrivingDataset(Dataset):
     """HDDから自律走行データを読み込むためのデータセット"""
@@ -70,20 +69,17 @@ class DrivingDataset(Dataset):
         # 画像シーケンスを読み込む
         image_paths = selected_sequence['images'][start_frame : start_frame + self.sequence_length]
 
-        clean_frames = []
+        frames = []
         for img_path in image_paths:
             img = Image.open(img_path).convert('RGB')
-            clean_frames.append(self.transform(img))
+            frames.append(self.transform(img))
 
-        clean_frames_tensor = torch.stack(clean_frames) # (T, C, H, W)
+        frames_tensor = torch.stack(frames) # (T, C, H, W)
         # (T, H, W, C) に変換
-        clean_frames_tensor = clean_frames_tensor.permute(0, 2, 3, 1)
-
-        # 汚損フレームを生成
-        corrupted_frames_tensor = add_whiteout(frame=clean_frames_tensor.clone())
+        frames = frames_tensor.permute(0, 2, 3, 1)
 
         # ターゲットを読み込む
         targets_full = np.load(selected_sequence['target'])
         targets = torch.from_numpy(targets_full[start_frame : start_frame + self.sequence_length]).float()
 
-        return clean_frames_tensor, corrupted_frames_tensor, targets
+        return frames, targets

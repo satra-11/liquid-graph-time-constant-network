@@ -51,10 +51,9 @@ def train_model(
         model.train()
         epoch_train_loss = 0.0
         
-        for batch_idx, (clean_frames, corrupted_frames, targets) in enumerate(train_loader):
-            clean_frames = clean_frames.to(device)
-            corrupted_frames = corrupted_frames.to(device)
-            targets = targets.to(device) # [B, 20]
+        for batch_idx, (frames, targets) in enumerate(train_loader):
+            frames = frames.to(device)
+            targets = targets.to(device) # torch.Size([B, 20])
             
             optimizer.zero_grad()
             
