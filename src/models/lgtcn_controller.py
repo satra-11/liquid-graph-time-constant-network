@@ -49,7 +49,7 @@ class LGTCNController(nn.Module):
         frames: torch.Tensor,
         adjacency: Optional[torch.Tensor] = None,
         hidden_state: Optional[torch.Tensor] = None
-    ) -> Tuple[torch.Tensor, torch.Tensor, Optional[torch.Tensor]]:
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         B, T, H, W, C = frames.shape
         
         frames_flat = frames.view(-1, C, H, W)
