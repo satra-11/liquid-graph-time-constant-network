@@ -17,10 +17,9 @@ import matplotlib.pyplot as plt
 
 from src.tasks import (
     NetworkComparator,
-    DrivingDataset
 )
 from src.models import LGTCNController, LTCNController
-
+from src.utils import DrivingDataset
 
 def set_seed(seed: int):
     random.seed(seed)
