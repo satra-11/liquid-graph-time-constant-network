@@ -8,6 +8,7 @@ import random
 from pathlib import Path
 import json
 import os
+import time
 import numpy as np
 import torch
 import torch.nn as nn
@@ -42,6 +43,8 @@ def train_model(
     
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     criterion = nn.MSELoss()
+
+    start_time = time.time()
     
     train_losses = []
     val_losses = []
@@ -90,6 +93,10 @@ def train_model(
         
         if epoch % 10 == 0:
             print(f"Epoch {epoch:3d}: Train Loss = {avg_train_loss:.6f}, Val Loss = {avg_val_loss:.6f}")
+
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    print(f"Training finished in {time.strftime('%H:%M:%S', time.gmtime(elapsed_time))}.")
     
     return train_losses, val_losses
 
@@ -273,4 +280,8 @@ def main():
 
 
 if __name__ == "__main__":
+    start_time = time.time()
     main()
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    print(f"Total execution time: {time.strftime('%H:%M:%S', time.gmtime(elapsed_time))}.")
