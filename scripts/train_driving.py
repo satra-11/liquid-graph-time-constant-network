@@ -63,7 +63,7 @@ def train_model(
             
             predictions, _ = model(frames)
             
-            loss = criterion(predictions[:, -1, :], sensors)
+            loss = criterion(predictions[:, -1, :], sensors[:, -1, :])
             
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
@@ -86,7 +86,7 @@ def train_model(
                 predictions, _ = model(frames)
                 
                 # 予測の最後のタイムステップと比較
-                loss = criterion(predictions[:, -1, :], sensors)
+                loss = criterion(predictions[:, -1, :], sensors[:, -1, :])
                 epoch_val_loss += loss.item()
         
         avg_val_loss = epoch_val_loss / len(val_loader)
