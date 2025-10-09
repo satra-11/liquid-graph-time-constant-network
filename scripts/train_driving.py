@@ -54,16 +54,16 @@ def train_model(
         model.train()
         epoch_train_loss = 0.0
         
-        for batch_idx, (frames, targets) in enumerate(train_loader):
+        for batch_idx, (frames, sersors) in enumerate(train_loader):
             frames = frames.to(device)# frames.shape = torch.Size([B, T, C, H, W])
-            targets = targets.to(device)# targets.shape = torch.Size([B, 20])
+            sensors = sensors.to(device)# sensors.shape = torch.Size([B, 8])
 
             
             optimizer.zero_grad()
             
             predictions, _ = model(frames)# frames.shape = torch.Size([B, T, 20])
             
-            loss = criterion(predictions[:, -1, :], targets) # predictions.shape = torch.Size([B, T, 20])
+            loss = criterion(predictions[:, -1, :], sensors) # predictions.shape = torch.Size([B, T, 8])
             
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
@@ -79,14 +79,14 @@ def train_model(
         epoch_val_loss = 0.0
         
         with torch.no_grad():
-            for frames, targets in val_loader:
+            for frames, sensors in val_loader:
                 frames = frames.to(device)
-                targets = targets.to(device)
+                sensors = sensors.to(device)
                 
                 predictions, _ = model(frames)
                 
                 # 予測の最後のタイムステップと比較
-                loss = criterion(predictions[:, -1, :], targets)
+                loss = criterion(predictions[:, -1, :], sensors)
                 epoch_val_loss += loss.item()
         
         avg_val_loss = epoch_val_loss / len(val_loader)
@@ -114,7 +114,7 @@ def evaluate_networks(
     # テストデータ準備
     test_dict = {
         'clean_frames': test_data['clean_frames'],
-        'targets': test_data['targets'],
+        'sensors': test_data['sensors'],
         'adjacency': None 
     }
     
@@ -141,7 +141,7 @@ def main():
     parser.add_argument("--data-dir", type=str, default="./hdd")
     parser.add_argument("--save-dir", type=str, default="./driving_results")
     parser.add_argument("--device", type=str, default="auto")
-    parser.add_argument("--target-sequence", type=str, default=None, help="Target sequence name for testing (e.g., 201702271017)")
+    parser.add_argument("--sensors-sequence", type=str, default=None, help="Sensor sequence name for testing (e.g., 201702271017)")
     
     args = parser.parse_args()
     
@@ -165,9 +165,8 @@ def main():
     
     full_dataset = DrivingDataset(
         camera_dir=os.path.join(args.data_dir, 'camera'),
-        target_dir=os.path.join(args.data_dir, 'target'),
+        sensor_dir=os.path.join(args.data_dir, 'sensor'),
         sequence_length=args.sequence_length,
-        target_sequence=args.target_sequence
     )
     
     # 訓練・検証・テストに分割
@@ -190,14 +189,14 @@ def main():
         frame_height=64,
         frame_width=64,
         hidden_dim=args.hidden_dim,
-        output_dim=20,
+        output_dim=8,
         K=args.K
     )
     
     ltcn_model = LTCNController(
         frame_height=64,
         frame_width=64,
-        output_dim=20,
+        output_dim=8,
         hidden_dim=args.hidden_dim,
     )
     
@@ -245,7 +244,7 @@ def main():
     # test_data = {
     #     'clean_frames': clean_frames[test_indices],
     #     'corrupted_frames': corrupted_frames[test_indices],
-    #     'targets': targets[test_indices]
+    #     'sensors': sensors[test_indices]
     # }
     # 
     # results = evaluate_networks(lgtcn_model, ltcn_model, test_data, device)

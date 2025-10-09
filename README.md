@@ -24,6 +24,20 @@ Start training by executing a command below. The results are generated at /drivi
 python3 /src/scripts/train_driving.py
 ```
 
+# Tasks
+## Self-Driving
+This task involves predicting the vehicle's control signals from camera images. The model is trained to output the following CAN bus data:
+
+-   **`accel_pedal_info`**: Accelerator pedal depression (0 to 1)
+-   **`brake_pedal_info`**: Brake pedal force or ratio
+-   **`steer_info`**: Steering angle or torque
+-   **`vel_info`**: Vehicle speed
+-   **`yaw_info`**: Yaw rate
+-   **`turn_signal_info`**: Turn signal (left/right)
+-   **`rtk_pos_info`**: RTK GPS position information
+-   **`rtk_track_info`**: RTK GPS track information
+
+
 # Directory Structure
 ```yaml
 ├───pyproject.toml
@@ -82,7 +96,7 @@ flowchart TD
     RH0 -- "x_t" --> RH["LGTCN(x_t, u_t, S_powers) → x_{t+1}"]
     RD -- "u_t" --> RH
     RADJ -. "S_powers" .-> RH
-    RH --> RQ["control_decoder → (B×20)"]
+    RH --> RQ["control_decoder → (B×8)"]
     subgraph RIN["Inputs"]
       direction LR
       RA
@@ -92,7 +106,7 @@ flowchart TD
 
     subgraph ROUT["Outputs"]
       direction LR
-      RO1["controls (B×T×20)"]
+      RO1["controls (B×T×8)"]
       RO2["final_hidden (B×N×H)"]
     end
     RQ --> RO1
@@ -117,7 +131,7 @@ hdd/
 │   │   ├───00000.jpg
 │   │   └───...
 │   └───<sequence_n>/
-└───target/
+└───sensor/
     ├───<sequence_0>.npy
     └───<sequence_n>.npy
 ```

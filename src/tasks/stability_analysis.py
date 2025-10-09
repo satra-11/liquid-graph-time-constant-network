@@ -100,7 +100,7 @@ class StabilityAnalyzer:
         model: nn.Module,
         clean_data: torch.Tensor,
         corrupted_data: torch.Tensor,
-        targets: torch.Tensor,
+        sensors: torch.Tensor,
         adjacency: Optional[torch.Tensor] = None
     ) -> Dict[str, float]:
         """汚損に対する耐性を分析"""
@@ -112,22 +112,22 @@ class StabilityAnalyzer:
                 clean_pred, _ = model(clean_data, adjacency)
             else:
                 clean_pred, _ = model(clean_data)
-            target_steering = targets[..., 0].unsqueeze(-1)
-            clean_loss = nn.MSELoss()(clean_pred, target_steering)
+            sensors_steering = sensors[..., 0].unsqueeze(-1)
+            clean_loss = nn.MSELoss()(clean_pred, sensors_steering)
             
             # 汚損データでの予測
             if isinstance(model, LGTCNController):
                 corrupted_pred, _ = model(corrupted_data, adjacency)
             else:
                 corrupted_pred, _ = model(corrupted_data)
-            corrupted_loss = nn.MSELoss()(corrupted_pred, target_steering)
+            corrupted_loss = nn.MSELoss()(corrupted_pred, sensors_steering)
             
             # 耐性指標（性能劣化の少なさ）
             resilience = 1.0 - (corrupted_loss - clean_loss) / (clean_loss + 1e-8)
             
             # 回復時間の計算（段階的に汚損を減らしていく）
             recovery_time = self._estimate_recovery_time(
-                model, clean_data, corrupted_data, targets, adjacency
+                model, clean_data, corrupted_data, sensors, adjacency
             )
             
         return {
@@ -142,7 +142,7 @@ class StabilityAnalyzer:
         model: nn.Module,
         clean_data: torch.Tensor,
         corrupted_data: torch.Tensor,
-        targets: torch.Tensor,
+        sensors: torch.Tensor,
         adjacency: Optional[torch.Tensor],
         steps: int = 10
     ) -> float:
@@ -151,7 +151,7 @@ class StabilityAnalyzer:
             clean_pred, _ = model(clean_data, adjacency)
         else:
             clean_pred, _ = model(clean_data)
-        clean_loss = nn.MSELoss()(clean_pred, targets)
+        clean_loss = nn.MSELoss()(clean_pred, sensors)
         
         for step in range(steps):
             # 徐々に汚損を減らす
@@ -162,7 +162,7 @@ class StabilityAnalyzer:
                 pred, _ = model(mixed_data, adjacency)
             else:
                 pred, _ = model(mixed_data)
-            loss = nn.MSELoss()(pred, targets)
+            loss = nn.MSELoss()(pred, sensors)
             
             # クリーンデータのlossに近づいたら回復したとみなす
             if abs(loss - clean_loss) / clean_loss < 0.1:
@@ -256,7 +256,7 @@ class NetworkComparator:
             print(f"Testing corruption level: {corruption_level}")
             
             clean_frames = test_data['clean_frames']
-            targets = test_data['targets']
+            sensors = test_data['sensors']
             adjacency = test_data.get('adjacency')
             
             # 汚損フレーム生成
@@ -266,13 +266,13 @@ class NetworkComparator:
             
             # LGTCNテスト
             lgtcn_metrics = self._evaluate_model(
-                lgtcn_model, clean_frames, corrupted_frames, targets, adjacency
+                lgtcn_model, clean_frames, corrupted_frames, sensors, adjacency
             )
             results['lgtcn'][f'corruption_{corruption_level}'] = lgtcn_metrics
             
             # LTCNテスト
             ltcn_metrics = self._evaluate_model(
-                ltcn_model, clean_frames, corrupted_frames, targets, adjacency
+                ltcn_model, clean_frames, corrupted_frames, sensors, adjacency
             )
             results['ltcn'][f'corruption_{corruption_level}'] = ltcn_metrics
         
@@ -286,14 +286,14 @@ class NetworkComparator:
         model: nn.Module,
         clean_data: torch.Tensor,
         corrupted_data: torch.Tensor,
-        targets: torch.Tensor,
+        sensors: torch.Tensor,
         adjacency: Optional[torch.Tensor]
     ) -> StabilityMetrics:
         """単一モデルの評価"""
         
         clean_data = clean_data.to(self.device)
         corrupted_data = corrupted_data.to(self.device)
-        targets = targets.to(self.device)
+        sensors = sensors.to(self.device)
         if adjacency is not None:
             adjacency = adjacency.to(self.device)
 
@@ -307,9 +307,9 @@ class NetworkComparator:
                 pred_clean, _ = model(clean_data)
                 pred_corrupted, _ = model(corrupted_data)
             
-            target_steering = targets[..., 0].unsqueeze(-1)
-            control_mse = nn.MSELoss()(pred_corrupted, target_steering).item()
-            control_mae = nn.L1Loss()(pred_corrupted, target_steering).item()
+            sensors_steering = sensors[..., 0].unsqueeze(-1)
+            control_mse = nn.MSELoss()(pred_corrupted, sensors_steering).item()
+            control_mae = nn.L1Loss()(pred_corrupted, sensors_steering).item()
         
         # 隠れ状態安定性
         stability_metrics = self.analyzer.analyze_hidden_state_stability(
@@ -318,7 +318,7 @@ class NetworkComparator:
         
         # 汚損耐性
         resilience_metrics = self.analyzer.analyze_corruption_resilience(
-            model, clean_data, corrupted_data, targets, adjacency
+            model, clean_data, corrupted_data, sensors, adjacency
         )
         
         # 予測一貫性
