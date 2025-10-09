@@ -141,7 +141,7 @@ def main():
     parser.add_argument("--data-dir", type=str, default="./hdd")
     parser.add_argument("--save-dir", type=str, default="./driving_results")
     parser.add_argument("--device", type=str, default="auto")
-    parser.add_argument("--sensors-sequence", type=str, default=None, help="Sensor sequence name for testing (e.g., 201702271017)")
+    parser.add_argument("--sensor-sequence", type=str, default=None, help="Sensor sequence name for testing (e.g., 201702271017)")
     
     args = parser.parse_args()
     
