@@ -5,8 +5,9 @@ from glob import glob
 import numpy as np
 import torch
 from torch.utils.data import Dataset
-from PIL import Image
 import torchvision.transforms as T
+from PIL import (Image, ImageFile)
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 class DrivingDataset(Dataset):
     """
@@ -107,7 +108,7 @@ class DrivingDataset(Dataset):
 
             self.sequences.append({
                 "name": seq,
-                "frames_all": frames,   # 間引き済み
+                "frames_all": frames,
                 "sensor_path": sfile,
                 "L": L,
                 "n_subseq": n_subseq,
