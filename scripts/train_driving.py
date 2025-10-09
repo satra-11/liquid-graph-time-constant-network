@@ -66,6 +66,7 @@ def train_model(
             loss = criterion(predictions[:, -1, :], targets)
             
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
             
             epoch_train_loss += loss.item()
