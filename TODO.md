@@ -2,13 +2,17 @@
 * [ ] 学習が進まない
     * [x] 損失計算の誤り。`train_driving.py`の損失計算で、`predictions`と`targets`の形状が不一致
     * [x] 勾配クリッピングの欠如。
-    * [x] targetではなくsensorに変更
+    * [x] targetではなくsensorに変更(検証中)
+    * [ ] 隣接行列adjecencyをどうやって決めるか。=> スーパーピクセル、GraphODEやGGNNなどの実装を確認、オンラインかどうか
+    * [ ] src/utils/graph.pyの確認
+    * [ ] Loss関数にペナルティ項を入れる
+    * [ ] 層を増やしてみる
+
     * [ ] 学習率スケジューラの欠如。学習の停滞を避けるため、`torch.optim.lr_scheduler`（例：`StepLR`や`ReduceLROnPlateau`）を訓練ループに追加する。
     * [ ] データ正規化の不足。`DrivingDataset`で、`ToTensor`による[0, 1]スケーリングに加え、ImageNet等の平均と標準偏差を用いた正規化を追加する。
     * [ ] LTCNモデルの入力処理。`LTCNController`で空間情報を集約する`mean(dim=1)`が情報ボトルネックになっている可能性があるため、より多くの情報を保持する別の集約方法を検討する。
-* [ ] src/tasks/autonomous_driving.pyの確認
 * [ ] グラフを時系列で求める
-* [ ] 自動運転タスクであることをREADMEに記述
+
 
 ---
 * [x] フロー図を生成する
@@ -19,6 +23,8 @@
 * [x] リアルなドライブ映像を使用する
 * [x] 画像へのグラフの適用が適切か検討
 * [x] 最適なバッチサイズを求める
+* [x] 自動運転タスクであることをREADMEに記述
+* [x] src/tasks/autonomous_driving.pyの確認
 
 ### 論文読み
 * [x] Section I (INTRODUCTION) を読む — 新しい概念をObsidianにメモ
