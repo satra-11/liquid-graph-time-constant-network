@@ -48,7 +48,10 @@ def main():
     print(f"Using device: {device}")
     
     # シード設定
-    set_seed(args.seed)
+    random.seed(args.seed)
+    np.random.seed(args.seed)
+    torch.manual_seed(args.seed)
+    torch.cuda.manual_seed_all(args.seed)
     
     # 保存ディレクトリ作成
     save_dir = Path(args.save_dir)
@@ -133,21 +136,6 @@ def main():
     plt.savefig(save_dir / "training_curves.png")
     plt.show()
     
-    # # テストデータで評価
-    # print("Evaluating networks...")
-    # test_data = {
-    #     'clean_frames': clean_frames[test_indices],
-    #     'corrupted_frames': corrupted_frames[test_indices],
-    #     'sensors': sensors[test_indices]
-    # }
-    # 
-    # results = evaluate_networks(lgtcn_model, ltcn_model, test_data, device)
-    # 
-    # # 結果を保存
-    # comparator = NetworkComparator(device)
-    # comparator.save_results(results, save_dir / "comparison_results.json")
-    # comparator.visualize_comparison(results, save_dir / "comparison_plots.png")
-    
     # モデル保存
     torch.save(lgtcn_model.state_dict(), save_dir / "lgtcn_model.pth")
     torch.save(ltcn_model.state_dict(), save_dir / "ltcn_model.pth")
@@ -165,13 +153,6 @@ def main():
         json.dump(training_info, f, indent=2)
     
     print(f"Training completed! Results saved to {save_dir}")
-    
-    # # 結果サマリー表示
-    # comparison = results['comparison']
-    # print("\n=== Comparison Summary ===")
-    # for metric, data in comparison['winner_by_metric'].items():
-    #     print(f"{metric}: {data['winner']} wins (LGTCN: {data['lgtcn_avg']:.4f}, LTCN: {data['ltcn_avg']:.4f})")
-
 
 if __name__ == "__main__":
     start_time = time.time()
@@ -179,15 +160,6 @@ if __name__ == "__main__":
     end_time = time.time()
     elapsed_time = end_time - start_time
     print(f"Total execution time: {time.strftime('%H:%M:%S', time.gmtime(elapsed_time))}.")
-
-
-
-
-def set_seed(seed: int):
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
 
 
 def train_model(
