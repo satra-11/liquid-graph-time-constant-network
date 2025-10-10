@@ -4,7 +4,7 @@
     * [x] 勾配クリッピングの欠如。
     * [x] targetではなくsensorに変更(検証中)
     * [ ] 隣接行列adjecencyをどうやって決めるか。=> スーパーピクセル、GraphODEやGGNNなどの実装を確認、オンラインかどうか
-    * [ ] src/utils/graph.pyの確認
+    * [x] src/utils/graph.pyの確認
     * [ ] Loss関数にペナルティ項を入れる
     * [ ] 層を増やしてみる
 
