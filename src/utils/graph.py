@@ -14,9 +14,6 @@ def compute_support_powers(S: torch.Tensor, K: int):
     eye = torch.eye(N, device=S.device, dtype=S.dtype).expand(*batch, N, N)
     powers = [eye]
 
-    if K == 0:
-        return powers
-
     cur = S
     for _ in range(1, K + 1):
         powers.append(cur)
