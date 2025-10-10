@@ -4,9 +4,10 @@
     * [x] 勾配クリッピングの欠如。
     * [x] targetではなくsensorに変更(検証中)
     * [ ] 隣接行列adjecencyをどうやって決めるか。=> スーパーピクセル、GraphODEやGGNNなどの実装を確認、オンラインかどうか
+    * [ ] outputからGPS情報を外す
+    * [ ] flocking も入れてみる
     * [ ] Loss関数にペナルティ項を入れる
     * [ ] 層を増やしてみる
-
     * [ ] 学習率スケジューラの欠如。学習の停滞を避けるため、`torch.optim.lr_scheduler`（例：`StepLR`や`ReduceLROnPlateau`）を訓練ループに追加する。
     * [ ] データ正規化の不足。`DrivingDataset`で、`ToTensor`による[0, 1]スケーリングに加え、ImageNet等の平均と標準偏差を用いた正規化を追加する。
     * [ ] LTCNモデルの入力処理。`LTCNController`で空間情報を集約する`mean(dim=1)`が情報ボトルネックになっている可能性があるため、より多くの情報を保持する別の集約方法を検討する。
