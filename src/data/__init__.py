@@ -1,4 +1,4 @@
-from hdd_loader import HDDLoader
+from .hdd_loader import HDDLoader
 
 __all__ = [
     "HDDLoader",

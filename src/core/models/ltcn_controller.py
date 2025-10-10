@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from typing import Optional, Tuple
 
-from src.layers import LTCNLayer
+from src.core.layers import LTCNLayer
 
 
 class LTCNController(nn.Module):
