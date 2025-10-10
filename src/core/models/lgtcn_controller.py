@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn
 from typing import Optional, Tuple
 
-from src.layers import LGTCNLayer
-from src.utils import compute_support_powers
+from src.core.layers import LGTCNLayer
+from src.utils import compute_s_powers
 
 class LGTCNController(nn.Module):
     """映像データからLGTCNを使って制御信号を生成するコントローラー"""
@@ -77,7 +77,7 @@ class LGTCNController(nn.Module):
             
             A_t = adjacency[:, t, :, :]
             attentions.append(A_t)
-            S_powers = compute_support_powers(A_t, self.K)
+            S_powers = compute_s_powers(A_t, self.K)
             
             next_hidden = self.temporal_processor(
                 current_hidden, 

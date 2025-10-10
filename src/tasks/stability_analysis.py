@@ -4,9 +4,7 @@ import torch.nn as nn
 import numpy as np
 from typing import Dict, List, Optional, Any
 import matplotlib.pyplot as plt
-import json
-from src.models import LGTCNController
-from src.data_models import StabilityMetrics
+from src.core.models import LGTCNController
 from src.utils import add_whiteout
 
 class NetworkComparator:
@@ -67,7 +65,7 @@ class NetworkComparator:
         corrupted_data: torch.Tensor,
         sensors: torch.Tensor,
         adjacency: Optional[torch.Tensor]
-    ) -> StabilityMetrics:
+    ) :
         """単一モデルの評価"""
         
         clean_data = clean_data.to(self.device)
@@ -92,10 +90,8 @@ class NetworkComparator:
         
 
         
-        return StabilityMetrics(
-            control_mse=control_mse,
-            control_mae=control_mae,
-        )
+        return control_mse, control_mae
+        
     
     def _generate_comparison_summary(self, results: Dict[str, Any]) -> Dict[str, Any]:
         """比較サマリーを生成"""
@@ -178,25 +174,3 @@ class NetworkComparator:
         if save_path:
             plt.savefig(save_path)
         plt.show()
-    
-    def save_results(self, results: Dict[str, Any], save_path: Path):
-        """結果をJSONファイルに保存"""
-        # StabilityMetricsをdict形式に変換
-        def metrics_to_dict(metrics):
-            if isinstance(metrics, StabilityMetrics):
-                return {
-                    'control_mse': float(metrics.control_mse),
-                    'control_mae': float(metrics.control_mae),
-                }
-            return metrics
-        
-        serializable_results = {}
-        for network_type, network_results in results.items():
-            serializable_results[network_type] = {}
-            for key, value in network_results.items():
-                serializable_results[network_type][key] = metrics_to_dict(value)
-        
-        with open(save_path, 'w') as f:
-            json.dump(serializable_results, f, indent=2)
-        
-        print(f"Results saved to {save_path}")

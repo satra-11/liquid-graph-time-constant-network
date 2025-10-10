@@ -19,8 +19,8 @@ import matplotlib.pyplot as plt
 from src.tasks import (
     NetworkComparator,
 )
-from src.models import LGTCNController, LTCNController
-from src.utils import DrivingDataset
+from src.core.models import LGTCNController, LTCNController
+from src.data import HDDLoader
 
 def set_seed(seed: int):
     random.seed(seed)
@@ -163,7 +163,7 @@ def main():
     # データセット作成
     print("Loading dataset from HDD...")
     
-    full_dataset = DrivingDataset(
+    full_dataset = HDDLoader(
         camera_dir=os.path.join(args.data_dir, 'camera'),
         sensor_dir=os.path.join(args.data_dir, 'sensor'),
         sequence_length=args.sequence_length,

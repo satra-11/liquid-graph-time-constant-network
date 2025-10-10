@@ -1,6 +1,6 @@
 import torch
 
-def compute_support_powers(S: torch.Tensor, K: int):
+def compute_s_powers(S: torch.Tensor, K: int):
     """
     S: (..., N, N)   何軸あっても最後の 2 軸が正方なら OK
     K: 最高次数

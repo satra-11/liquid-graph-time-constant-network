@@ -9,7 +9,7 @@ import torchvision.transforms as T
 from PIL import (Image, ImageFile)
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
-class DrivingDataset(Dataset):
+class HDDLoader(Dataset):
     """
     Camera(画像列) と Sensor(数値系列) を同一窓で返すデータセット
 
