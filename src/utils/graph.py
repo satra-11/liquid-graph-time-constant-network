@@ -20,6 +20,6 @@ def compute_support_powers(S: torch.Tensor, K: int):
     cur = S
     for _ in range(1, K + 1):
         powers.append(cur)
-        cur = cur @ S     # ブロードキャスト版バッチ行列積
+        cur = cur @ S
     return powers
 
