@@ -65,7 +65,7 @@ class NetworkComparator:
         corrupted_data: torch.Tensor,
         sensors: torch.Tensor,
         adjacency: Optional[torch.Tensor]
-    ) :
+    ) -> Dict[str, float]:
         """単一モデルの評価"""
         
         clean_data = clean_data.to(self.device)
@@ -90,7 +90,7 @@ class NetworkComparator:
         
 
         
-        return control_mse, control_mae
+        return {'control_mse': control_mse, 'control_mae': control_mae}
         
     
     def _generate_comparison_summary(self, results: Dict[str, Any]) -> Dict[str, Any]:
@@ -110,8 +110,8 @@ class NetworkComparator:
             
             for key in results['lgtcn'].keys():
                 if key.startswith('corruption_'):
-                    lgtcn_val = getattr(results['lgtcn'][key], metric)
-                    ltcn_val = getattr(results['ltcn'][key], metric)
+                    lgtcn_val = results['lgtcn'][key][metric]
+                    ltcn_val = results['ltcn'][key][metric]
                     lgtcn_values.append(lgtcn_val)
                     ltcn_values.append(ltcn_val)
             
@@ -157,8 +157,8 @@ class NetworkComparator:
             
             for corruption_level in corruption_levels:
                 key = f'corruption_{corruption_level}'
-                lgtcn_val = getattr(results['lgtcn'][key], metric)
-                ltcn_val = getattr(results['ltcn'][key], metric)
+                lgtcn_val = results['lgtcn'][key][metric]
+                ltcn_val = results['ltcn'][key][metric]
                 lgtcn_values.append(lgtcn_val)
                 ltcn_values.append(ltcn_val)
             
