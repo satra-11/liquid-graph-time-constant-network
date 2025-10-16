@@ -1,3 +1,4 @@
+import json
 from matplotlib.path import Path
 import torch
 import torch.nn as nn
@@ -12,6 +13,11 @@ class NetworkComparator:
     
     def __init__(self, device: torch.device = None):
         self.device = device or torch.device('cpu')
+
+    def save_results(self, results: Dict[str, Any], save_path: Path):
+        """比較結果をJSONファイルに保存"""
+        with open(save_path, 'w') as f:
+            json.dump(results, f, indent=2)
     
     def compare_networks(
         self,
