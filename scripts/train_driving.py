@@ -232,7 +232,7 @@ def train_model(
             
             epoch_train_loss += loss.item()
 
-            if batch_idx == 2:
+            if batch_idx == 10:
                 print("\n[Debug] Early breaking the training loop.")
                 break
         
@@ -254,7 +254,7 @@ def train_model(
                 loss = criterion(predictions[:, -1, :], sensors[:, -1, :])
                 epoch_val_loss += loss.item()
 
-                if val_batch_idx == 2:
+                if val_batch_idx == 10:
                     print("[Debug] Early breaking the validation loop.")
                     break
         
