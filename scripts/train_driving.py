@@ -154,13 +154,6 @@ def main():
     
     print(f"Training completed! Results saved to {save_dir}")
 
-if __name__ == "__main__":
-    start_time = time.time()
-    main()
-    end_time = time.time()
-    elapsed_time = end_time - start_time
-    print(f"Total execution time: {time.strftime('%H:%M:%S', time.gmtime(elapsed_time))}.")
-
 
 def train_model(
     model: LTCNController | LGTCNController,
@@ -277,3 +270,9 @@ def evaluate_networks(
     
     return results
 
+if __name__ == "__main__":
+    start_time = time.time()
+    main()
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    print(f"Total execution time: {time.strftime('%H:%M:%S', time.gmtime(elapsed_time))}.")
