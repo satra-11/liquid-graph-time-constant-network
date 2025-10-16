@@ -79,6 +79,7 @@ def main():
     # データローダー作成
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False)
+    test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)
     
     # モデル作成
     print("Creating models...")
@@ -148,18 +149,38 @@ def main():
         'ltcn_train_losses': ltcn_train_losses,
         'ltcn_val_losses': ltcn_val_losses,
     }
+    lgtcn_model.eval()
+    ltcn_model.eval()
+
+    with torch.no_grad():
+        try:
+            test_frames, test_sensors, _, _ = next(iter(test_loader))
+        except StopIteration:
+            raise RuntimeError("Test loader が空です。テストデータが読み込まれているか確認してください。")
+
+    # デバイスへ転送
+    test_frames = test_frames.to(device)
+    test_sensors = test_sensors.to(device)
+
+    # evaluate_networks に渡す dict
+    test_data = {
+        "clean_frames": test_frames,  # 汚染なしフレーム（評価時に内部で汚染レベルを変えて比較）
+        "sensors": test_sensors,      # 教師信号（最後のタイムステップ等を使って比較）
+        # "adjacency": は evaluate_networks 内で None に設定されるため不要
+    }
+
+    # 評価の実行
+    results = evaluate_networks(lgtcn_model, ltcn_model, test_data, device)
+    
+    # 結果を保存
+    comparator = NetworkComparator(device)
+    comparator.save_results(results, save_dir / "comparison_results.json")
+    comparator.visualize_comparison(results, save_dir / "comparison_plots.png")
     
     with open(save_dir / "training_info.json", 'w') as f:
         json.dump(training_info, f, indent=2)
     
     print(f"Training completed! Results saved to {save_dir}")
-
-if __name__ == "__main__":
-    start_time = time.time()
-    main()
-    end_time = time.time()
-    elapsed_time = end_time - start_time
-    print(f"Total execution time: {time.strftime('%H:%M:%S', time.gmtime(elapsed_time))}.")
 
 
 def train_model(
@@ -261,3 +282,9 @@ def evaluate_networks(
     
     return results
 
+if __name__ == "__main__":
+    start_time = time.time()
+    main()
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    print(f"Total execution time: {time.strftime('%H:%M:%S', time.gmtime(elapsed_time))}.")
