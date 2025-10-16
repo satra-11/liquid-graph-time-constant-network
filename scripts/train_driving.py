@@ -198,6 +198,11 @@ def train_model(
             
             predictions, _ = model(frames)
             
+            print(f"\n[Debug] Batch {batch_idx}:")
+            print(f"[Debug] frames shape: {frames.shape}")
+            print(f"[Debug] sensors shape: {sensors.shape}")
+            print(f"[Debug] predictions shape: {predictions.shape}")
+
             loss = criterion(predictions[:, -1, :], sensors[:, -1, :])
             
             loss.backward()
@@ -205,8 +210,12 @@ def train_model(
             optimizer.step()
             
             epoch_train_loss += loss.item()
+
+            if batch_idx == 2:
+                print("\n[Debug] Early breaking the training loop.")
+                break
         
-        avg_train_loss = epoch_train_loss / len(train_loader)
+        avg_train_loss = epoch_train_loss / (batch_idx + 1)
         train_losses.append(avg_train_loss)
         
         # 検証フェーズ
@@ -214,7 +223,7 @@ def train_model(
         epoch_val_loss = 0.0
         
         with torch.no_grad():
-            for frames, sensors, _, _ in val_loader:
+            for val_batch_idx, (frames, sensors, _, _) in enumerate(val_loader):
                 frames = frames.to(device)
                 sensors = sensors.to(device)
                 
@@ -223,12 +232,19 @@ def train_model(
                 # 予測の最後のタイムステップと比較
                 loss = criterion(predictions[:, -1, :], sensors[:, -1, :])
                 epoch_val_loss += loss.item()
+
+                if val_batch_idx == 2:
+                    print("[Debug] Early breaking the validation loop.")
+                    break
         
-        avg_val_loss = epoch_val_loss / len(val_loader)
+        avg_val_loss = epoch_val_loss / (val_batch_idx + 1)
         val_losses.append(avg_val_loss)
         
         if epoch % 10 == 0:
             print(f"Epoch {epoch:3d}: Train Loss = {avg_train_loss:.6f}, Val Loss = {avg_val_loss:.6f}")
+
+        print("[Debug] Early breaking the epoch loop.")
+        break
 
     end_time = time.time()
     elapsed_time = end_time - start_time
