@@ -2,11 +2,11 @@ import torch
 import torch.nn as nn
 from typing import Optional, Tuple
 
-from src.core.layers import LGTCNLayer
+from src.core.layers import CfGCNLayer
 from src.utils import compute_s_powers
 
-class LGTCNController(nn.Module):
-    """映像データからLGTCNを使って制御信号を生成するコントローラー"""
+class CfGCNController(nn.Module):
+    """映像データからCfGCNを使って制御信号を生成するコントローラー"""
     
     def __init__(
         self,
@@ -34,7 +34,7 @@ class LGTCNController(nn.Module):
             nn.AdaptiveAvgPool2d((8, 8))
         )
         
-        self.temporal_processor = LGTCNLayer(hidden_dim, hidden_dim, K)
+        self.temporal_processor = CfGCNLayer(hidden_dim, hidden_dim, K)
         
         self.control_decoder = nn.Sequential(
             nn.Linear(hidden_dim, 128),

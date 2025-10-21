@@ -4,7 +4,7 @@ import torch.nn as nn
 import numpy as np
 from typing import Dict, List, Optional, Any
 import matplotlib.pyplot as plt
-from src.core.models import LGTCNController
+from src.core.models import CfGCNController
 from src.utils import add_whiteout
 
 class NetworkComparator:
@@ -77,7 +77,7 @@ class NetworkComparator:
         # 制御精度
         model.eval()
         with torch.no_grad():
-            if isinstance(model, LGTCNController):
+            if isinstance(model, CfGCNController):
                 pred_clean, _ = model(clean_data, adjacency)
                 pred_corrupted, _ = model(corrupted_data, adjacency)
             else:

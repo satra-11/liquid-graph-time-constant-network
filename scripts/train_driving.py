@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 from src.tasks import (
     NetworkComparator,
 )
-from src.core.models import LGTCNController, LTCNController
+from src.core.models import CfGCNController, LTCNController
 from src.data import HDDLoader
 
 def main():
@@ -83,7 +83,7 @@ def main():
     
     # モデル作成
     print("Creating models...")
-    lgtcn_model = LGTCNController(
+    lgtcn_model = CfGCNController(
         frame_height=64,
         frame_width=64,
         hidden_dim=args.hidden_dim,
@@ -184,7 +184,7 @@ def main():
 
 
 def train_model(
-    model: LTCNController | LGTCNController,
+    model: LTCNController | CfGCNController,
     train_loader: DataLoader,
     val_loader: DataLoader,
     num_epochs: int = 100,
@@ -259,7 +259,7 @@ def train_model(
 
 
 def evaluate_networks(
-    lgtcn_model: LGTCNController,
+    lgtcn_model: CfGCNController,
     ltcn_model: LTCNController,
     test_data: dict,
     device: torch.device
