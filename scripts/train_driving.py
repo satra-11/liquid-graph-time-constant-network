@@ -14,6 +14,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, random_split
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 
 from src.tasks import (
     NetworkComparator,
@@ -208,13 +209,10 @@ def train_model(
         # 訓練フェーズ
         model.train()
         epoch_train_loss = 0.0
-        count = 0
         
-        for batch_idx, (frames, sensors, _, _) in enumerate(train_loader):
+        for frames, sensors, _, _ in tqdm(train_loader, desc=f"Epoch {epoch+1}/{num_epochs} [TRAIN]"):
             frames = frames.to(device)
             sensors = sensors.to(device)
-            print(f"学習中{count} / {len(train_loader)}", end='\r')
-            count += 1
             
             optimizer.zero_grad()
             
@@ -236,7 +234,7 @@ def train_model(
         epoch_val_loss = 0.0
         
         with torch.no_grad():
-            for frames, sensors, _, _ in val_loader:
+            for frames, sensors, _, _ in tqdm(val_loader, desc=f"Epoch {epoch+1}/{num_epochs} [VAL]"):
                 frames = frames.to(device)
                 sensors = sensors.to(device)
                 
