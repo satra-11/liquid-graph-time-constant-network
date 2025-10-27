@@ -64,6 +64,7 @@ def main():
         camera_dir=os.path.join(args.data_dir, 'camera'),
         sensor_dir=os.path.join(args.data_dir, 'sensor'),
         sequence_length=args.sequence_length,
+        exclude_features=["rtk_pos_info", "rtk_track_info"],
     )
     
     # 訓練・検証・テストに分割
@@ -94,7 +95,7 @@ def main():
     ltcn_model = LTCNController(
         frame_height=64,
         frame_width=64,
-        output_dim=8,
+        output_dim=6,
         hidden_dim=args.hidden_dim,
     )
     

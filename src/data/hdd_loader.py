@@ -20,6 +20,17 @@ class HDDLoader(Dataset):
       start: 窓の開始インデックス（間引き後のインデックス）
     """
 
+    FEATURE_KEYS = [
+        "accel_pedal_info",
+        "brake_pedal_info",
+        "steer_info",
+        "vel_info",
+        "yaw_info",
+        "turn_signal_info",
+        "rtk_pos_info",
+        "rtk_track_info",
+    ]
+
     def __init__(
         self,
         camera_dir: str,
@@ -35,6 +46,7 @@ class HDDLoader(Dataset):
         sensor_mean: Optional[np.ndarray] = None,    # shape=(D,)
         sensor_std: Optional[np.ndarray] = None,     # shape=(D,)
         sensor_dtype: torch.dtype = torch.float32,
+        exclude_features: Optional[List[str]] = None, # 除外するセンサー特徴量のリスト
     ):
         super().__init__()
         assert sequence_length > 0 and stride > 0
@@ -46,6 +58,7 @@ class HDDLoader(Dataset):
         self.sensor_mean = sensor_mean
         self.sensor_std = sensor_std
         self.sensor_dtype = sensor_dtype
+        self.exclude_features = exclude_features or []
 
         # ------------ 画像 transform ------------
         if camera_transform is None:
@@ -157,6 +170,13 @@ class HDDLoader(Dataset):
 
         s_mem = np.load(meta["sensor_path"], allow_pickle=False, mmap_mode="r")
         s_win = np.asarray(s_mem[start:end], dtype=np.float64).copy()  # [T, D]
+
+        # 特徴量を除外
+        if self.exclude_features:
+            exclude_indices = [self.FEATURE_KEYS.index(feat) for feat in self.exclude_features if feat in self.FEATURE_KEYS]
+            if exclude_indices:
+                s_win = np.delete(s_win, exclude_indices, axis=1)
+
         s_win = self._sanitize(s_win)
         s_win = self._maybe_norm_sensor(s_win)
         sensor = torch.as_tensor(s_win, dtype=self.sensor_dtype)  # [T, D]

@@ -14,7 +14,7 @@ class CfGCNController(nn.Module):
         frame_width: int = 64,
         hidden_dim: int = 64,
         K: int = 2,
-        output_dim: int = 1,
+        output_dim: int = 6,
         matrix_type: str = "adjacency",
     ):
         super().__init__()

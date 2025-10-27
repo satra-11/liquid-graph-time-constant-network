@@ -13,7 +13,7 @@ class LTCNController(nn.Module):
         frame_height: int = 64,
         frame_width: int = 64,
         hidden_dim: int = 64,
-        output_dim: int = 1,
+        output_dim: int = 6,
     ):
         super().__init__()
         self.frame_height = frame_height
