@@ -89,7 +89,7 @@ def main():
         frame_height=64,
         frame_width=64,
         hidden_dim=args.hidden_dim,
-        output_dim=8,
+        output_dim=6,
         K=args.K
     )
     
