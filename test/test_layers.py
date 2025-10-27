@@ -1,8 +1,9 @@
 import torch
 import pytest
 
-from src.utils import compute_support_powers
-from src.layers import (LGTCNLayer, CfGCNLayer, LTCNLayer)
+from src.utils.compute_s_powers import compute_s_powers
+from src.core.layers import (LGTCNLayer, CfGCNLayer, LTCNLayer)
+from src.core.models import CfGCNController
 
 
 @pytest.mark.parametrize("LayerCls", [LGTCNLayer, CfGCNLayer])
@@ -10,7 +11,7 @@ def test_gnn_layer_clamp_and_grad(LayerCls):
     N, Din, H, K = 4, 8, 16, 2
     S = torch.rand(N, N)                  # random dense graph
     S.fill_diagonal_(0)
-    S_powers = compute_support_powers(S, K)
+    S_powers = compute_s_powers(S, K)
     S_powers_2d = [sp.squeeze(0) for sp in S_powers]
 
     layer = LayerCls(Din, H, K)
@@ -33,7 +34,7 @@ def test_lgtc_time_integration():
     """LGTCNLayer should integrate multiple sub-steps without NaNs/Inf."""
     N, Din, H, K = 3, 5, 12, 1
     S = torch.eye(N)
-    S_powers = compute_support_powers(S, K)
+    S_powers = compute_s_powers(S, K)
     S_powers_2d = [sp.squeeze(0) for sp in S_powers]
 
     layer = LGTCNLayer(Din, H, K)
@@ -156,7 +157,7 @@ def test_cfgcn_layer_time_parameter():
     """Test CfGCNLayer with different time parameters."""
     N, Din, H, K = 4, 6, 8, 2
     S = torch.eye(N)
-    S_powers = compute_support_powers(S, K)
+    S_powers = compute_s_powers(S, K)
     S_powers_2d = [sp.squeeze(0) for sp in S_powers]
     
     layer = CfGCNLayer(Din, H, K)
@@ -177,7 +178,7 @@ def test_lgtcn_layer_multiple_steps():
     """Test LGTCNLayer with multiple integration steps."""
     N, Din, H, K = 5, 4, 10, 1
     S = torch.eye(N)
-    S_powers = compute_support_powers(S, K)
+    S_powers = compute_s_powers(S, K)
     S_powers_2d = [sp.squeeze(0) for sp in S_powers]
     
     layer = LGTCNLayer(Din, H, K)
@@ -199,7 +200,7 @@ def test_all_layers_consistency():
     N, Din, H, K = 6, 5, 12, 2
     S = torch.rand(N, N)
     S.fill_diagonal_(0)
-    S_powers = compute_support_powers(S, K)
+    S_powers = compute_s_powers(S, K)
     S_powers_2d = [sp.squeeze(0) for sp in S_powers]
     
     # Test LGTCNLayer and CfGCNLayer
@@ -225,3 +226,38 @@ def test_all_layers_consistency():
     
     assert y_next.shape == (H,)
     assert torch.isfinite(y_next).all()
+
+
+@pytest.mark.parametrize("matrix_type", ["adjacency", "laplacian", "random_walk"])
+def test_cfgcn_controller_matrix_types(matrix_type):
+    """Test CfGCNController with different matrix types."""
+    B, T, C, H_frame, W_frame = 2, 3, 3, 64, 64
+    hidden_dim, K, output_dim = 16, 2, 1
+    N_nodes = 64 # Based on AdaptiveAvgPool2d((8, 8)) -> 8*8 = 64 nodes
+
+    controller = CfGCNController(
+        frame_height=H_frame,
+        frame_width=W_frame,
+        hidden_dim=hidden_dim,
+        K=K,
+        output_dim=output_dim,
+        matrix_type=matrix_type
+    )
+
+    frames = torch.randn(B, T, C, H_frame, W_frame)
+    # Create a dummy adjacency matrix for testing
+    adjacency = torch.randint(0, 2, (B, T, N_nodes, N_nodes), dtype=torch.float32)
+    # Ensure it's symmetric for Laplacian/Random Walk (though not strictly required for this test)
+    adjacency = adjacency + adjacency.transpose(-1, -2)
+    adjacency = adjacency.clamp(0, 1)
+
+    controls, final_hidden = controller(frames, adjacency=adjacency)
+
+    # Check output shapes
+    assert controls.shape == (B, T, output_dim)
+    assert final_hidden.shape == (B, N_nodes, hidden_dim)
+
+    # Check for finite values
+    assert torch.isfinite(controls).all()
+    assert torch.isfinite(final_hidden).all()
+

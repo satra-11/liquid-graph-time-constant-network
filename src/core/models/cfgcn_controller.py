@@ -3,7 +3,7 @@ import torch.nn as nn
 from typing import Optional, Tuple
 
 from src.core.layers import CfGCNLayer
-from src.utils import compute_s_powers
+from src.utils import compute_s_powers, compute_laplacian, compute_random_walk_matrix
 
 class CfGCNController(nn.Module):
     """映像データからCfGCNを使って制御信号を生成するコントローラー"""
@@ -15,6 +15,7 @@ class CfGCNController(nn.Module):
         hidden_dim: int = 64,
         K: int = 2,
         output_dim: int = 1,
+        matrix_type: str = "adjacency",
     ):
         super().__init__()
         self.frame_height = frame_height
@@ -22,6 +23,7 @@ class CfGCNController(nn.Module):
         self.hidden_dim = hidden_dim
         self.K = K
         self.output_dim = output_dim
+        self.matrix_type = matrix_type
         self.node_encoder = nn.Linear(128, hidden_dim)
         
         self.feature_extractor = nn.Sequential(
@@ -77,7 +79,17 @@ class CfGCNController(nn.Module):
             
             A_t = adjacency[:, t, :, :]
             attentions.append(A_t)
-            S_powers = compute_s_powers(A_t, self.K)
+
+            if self.matrix_type == "adjacency":
+                S_t = A_t
+            elif self.matrix_type == "laplacian":
+                S_t = compute_laplacian(A_t)
+            elif self.matrix_type == "random_walk":
+                S_t = compute_random_walk_matrix(A_t)
+            else:
+                raise ValueError(f"Unknown matrix type: {self.matrix_type}")
+
+            S_powers = compute_s_powers(S_t, self.K)
             
             next_hidden = self.temporal_processor(
                 current_hidden, 
