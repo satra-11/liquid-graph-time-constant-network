@@ -84,13 +84,17 @@ class NetworkComparator:
                 pred_clean, _ = model(clean_data)
                 pred_corrupted, _ = model(corrupted_data)
             
-            sensors_steering = sensors[..., 0].unsqueeze(-1)
-            control_mse = nn.MSELoss()(pred_corrupted, sensors_steering).item()
-            control_mae = nn.L1Loss()(pred_corrupted, sensors_steering).item()
-        
+            # シーケンスの最後のタイムステップで評価
+            pred_corrupted_last = pred_corrupted[:, -1, :]
+            sensors_last = sensors[:, -1, :]
 
+            control_mse = nn.MSELoss()(pred_corrupted_last, sensors_last).item()
+            control_mae = nn.L1Loss()(pred_corrupted_last, sensors_last).item()
         
-        return control_mse, control_mae
+        return {
+            'control_mse': control_mse,
+            'control_mae': control_mae,
+        }
         
     
     def _generate_comparison_summary(self, results: Dict[str, Any]) -> Dict[str, Any]:
@@ -102,7 +106,7 @@ class NetworkComparator:
         }
         
         # 各メトリクスでの優劣
-        metrics = ['control_mse', 'control_mae',]
+        metrics = ['control_mse', 'control_mae']
         
         for metric in metrics:
             lgtcn_values = []
@@ -110,8 +114,8 @@ class NetworkComparator:
             
             for key in results['lgtcn'].keys():
                 if key.startswith('corruption_'):
-                    lgtcn_val = getattr(results['lgtcn'][key], metric)
-                    ltcn_val = getattr(results['ltcn'][key], metric)
+                    lgtcn_val = results['lgtcn'][key][metric]
+                    ltcn_val = results['ltcn'][key][metric]
                     lgtcn_values.append(lgtcn_val)
                     ltcn_values.append(ltcn_val)
             
@@ -157,8 +161,8 @@ class NetworkComparator:
             
             for corruption_level in corruption_levels:
                 key = f'corruption_{corruption_level}'
-                lgtcn_val = getattr(results['lgtcn'][key], metric)
-                ltcn_val = getattr(results['ltcn'][key], metric)
+                lgtcn_val = results['lgtcn'][key][metric]
+                ltcn_val = results['ltcn'][key][metric]
                 lgtcn_values.append(lgtcn_val)
                 ltcn_values.append(ltcn_val)
             
