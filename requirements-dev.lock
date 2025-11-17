@@ -116,6 +116,9 @@ mlflow-tracing==3.6.0
     # via mlflow
 mpmath==1.3.0
     # via sympy
+mypy==1.18.2
+mypy-extensions==1.1.0
+    # via mypy
 networkx==3.5
     # via torch
 numpy==2.3.2
@@ -150,6 +153,8 @@ pandas==2.3.1
     # via lgtcn
     # via mlflow
     # via seaborn
+pathspec==0.12.1
+    # via mypy
 pillow==11.3.0
     # via matplotlib
     # via torchvision
@@ -236,6 +241,7 @@ typing-extensions==4.14.1
     # via fastapi
     # via graphene
     # via mlflow-skinny
+    # via mypy
     # via opentelemetry-api
     # via opentelemetry-sdk
     # via opentelemetry-semantic-conventions
