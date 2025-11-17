@@ -1,35 +1,40 @@
 import torch
 
+
 def compute_laplacian(A: torch.Tensor, normalize: bool = True) -> torch.Tensor:
     """Computes the Laplacian matrix from an adjacency matrix."""
     if A.ndim == 2:
-        A = A.unsqueeze(0) # Add a batch dimension
-    
+        A = A.unsqueeze(0)  # Add a batch dimension
+
     # A: (B, N, N)
-    D = torch.sum(A, dim=-1, keepdim=True) # Degree matrix (B, N, 1)
-    
+    D = torch.sum(A, dim=-1, keepdim=True)  # Degree matrix (B, N, 1)
+
     if normalize:
         D_inv_sqrt = torch.pow(D, -0.5)
-        D_inv_sqrt[torch.isinf(D_inv_sqrt)] = 0.0 # Handle zero degrees
-        Laplacian = torch.eye(A.shape[-1], device=A.device, dtype=A.dtype).unsqueeze(0) - D_inv_sqrt * A * D_inv_sqrt.transpose(-1, -2)
+        D_inv_sqrt[torch.isinf(D_inv_sqrt)] = 0.0  # Handle zero degrees
+        Laplacian = torch.eye(A.shape[-1], device=A.device, dtype=A.dtype).unsqueeze(
+            0
+        ) - D_inv_sqrt * A * D_inv_sqrt.transpose(-1, -2)
     else:
-        Laplacian = torch.diag_embed(D) - A # Unnormalized Laplacian
+        Laplacian = torch.diag_embed(D) - A  # Unnormalized Laplacian
 
-    return Laplacian.squeeze(0) # Remove batch dimension if added
+    return Laplacian.squeeze(0)  # Remove batch dimension if added
+
 
 def compute_random_walk_matrix(A: torch.Tensor) -> torch.Tensor:
     """Computes the Random Walk matrix from an adjacency matrix."""
     if A.ndim == 2:
-        A = A.unsqueeze(0) # Add a batch dimension
-    
+        A = A.unsqueeze(0)  # Add a batch dimension
+
     # A: (B, N, N)
-    D = torch.sum(A, dim=-1, keepdim=True) # Degree matrix (B, N, 1)
+    D = torch.sum(A, dim=-1, keepdim=True)  # Degree matrix (B, N, 1)
     D_inv = torch.pow(D, -1)
-    D_inv[torch.isinf(D_inv)] = 0.0 # Handle zero degrees
-    
+    D_inv[torch.isinf(D_inv)] = 0.0  # Handle zero degrees
+
     random_walk_matrix = D_inv * A
 
-    return random_walk_matrix.squeeze(0) # Remove batch dimension if added
+    return random_walk_matrix.squeeze(0)  # Remove batch dimension if added
+
 
 def compute_s_powers(S: torch.Tensor, K: int):
     """

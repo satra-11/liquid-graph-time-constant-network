@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+
 class LTCNLayer(nn.Module):
     """
     Strict LTC layer faithful to the MATLAB ltc_def dynamics.
@@ -54,18 +55,21 @@ class LTCNLayer(nn.Module):
 
         # --- E matrices (per block): combine net_out_j and net_recurr_j into drive term
         #     Shapes: (B, k, k) so that (E[j] @ vec_k)
-        self.E_l   = nn.Parameter(torch.zeros(num_blocks, k, k))
+        self.E_l = nn.Parameter(torch.zeros(num_blocks, k, k))
         self.E_l_r = nn.Parameter(torch.zeros(num_blocks, k, k))
 
         self.reset_parameters()
 
     def reset_parameters(self):
         # He/Xavier-ish inits; tweak as needed
-        nn.init.xavier_uniform_(self.W_in.weight);      nn.init.zeros_(self.W_in.bias)
+        nn.init.xavier_uniform_(self.W_in.weight)
+        nn.init.zeros_(self.W_in.bias)
         for lin in self.W_fwd:
-            nn.init.xavier_uniform_(lin.weight);        nn.init.zeros_(lin.bias)
+            nn.init.xavier_uniform_(lin.weight)
+            nn.init.zeros_(lin.bias)
         for lin in self.W_rec:
-            nn.init.xavier_uniform_(lin.weight);        nn.init.zeros_(lin.bias)
+            nn.init.xavier_uniform_(lin.weight)
+            nn.init.zeros_(lin.bias)
         # E matrices small random
         nn.init.xavier_uniform_(self.E_l)
         nn.init.xavier_uniform_(self.E_l_r)
@@ -82,8 +86,8 @@ class LTCNLayer(nn.Module):
 
     def forward(
         self,
-        y: torch.Tensor,          # (..., N)
-        u_t: torch.Tensor | None, # (..., in_dim)  (required for block 0 each step)
+        y: torch.Tensor,  # (..., N)
+        u_t: torch.Tensor | None,  # (..., in_dim)  (required for block 0 each step)
         dt: float = 5e-2,
         n_steps: int = 1,
     ) -> torch.Tensor:
@@ -102,7 +106,7 @@ class LTCNLayer(nn.Module):
 
         for _ in range(n_steps):
             # tau positive
-            tau = F.softplus(self._tau_raw) + self.tau_eps         # shape (N,)
+            tau = F.softplus(self._tau_raw) + self.tau_eps  # shape (N,)
             tau = tau.view(B, k)
             if len(batch) > 0:
                 tau = tau.view(*([1] * len(batch)), B, k).expand(*batch, B, k)
@@ -117,15 +121,15 @@ class LTCNLayer(nn.Module):
             net_out.append(net0)
             # blocks 1..B-1 from previous block state
             for j in range(1, B):
-                prev = y[..., j - 1, :]                   # (..., k)
+                prev = y[..., j - 1, :]  # (..., k)
                 net_j = self._act(self.W_fwd[j - 1](prev))
                 net_out.append(net_j)
-            net_out = torch.stack(net_out, dim=-2)        # (..., B, k)
+            net_out = torch.stack(net_out, dim=-2)  # (..., B, k)
 
             # ---- net_recurr per block (from same block state)
             net_recurr = []
             for j in range(B):
-                cur = y[..., j, :]                        # (..., k)
+                cur = y[..., j, :]  # (..., k)
                 net_r = self._act(self.W_rec[j](cur))
                 net_recurr.append(net_r)
             net_recurr = torch.stack(net_recurr, dim=-2)  # (..., B, k)
@@ -135,17 +139,23 @@ class LTCNLayer(nn.Module):
 
             # ---- E-lin combinations: (E_l[j] @ net_out_j) and (E_l_r[j] @ net_recurr_j)
             # reshape for bmm: (..., B, k, k) @ (..., B, k, 1) -> (..., B, k, 1)
-            E  = self.E_l.view(*([1] * len(batch)), B, k, k).expand(*batch, B, k, k)
+            E = self.E_l.view(*([1] * len(batch)), B, k, k).expand(*batch, B, k, k)
             Er = self.E_l_r.view(*([1] * len(batch)), B, k, k).expand(*batch, B, k, k)
 
-            out_term   = torch.matmul(E,  net_out.unsqueeze(-1)).squeeze(-1)      # (..., B, k)
-            recurr_term= torch.matmul(Er, net_recurr.unsqueeze(-1)).squeeze(-1)   # (..., B, k)
+            out_term = torch.matmul(E, net_out.unsqueeze(-1)).squeeze(-1)  # (..., B, k)
+            recurr_term = torch.matmul(Er, net_recurr.unsqueeze(-1)).squeeze(
+                -1
+            )  # (..., B, k)
 
-            dydt = -y * decay + out_term + recurr_term                            # (..., B, k)
+            dydt = -y * decay + out_term + recurr_term  # (..., B, k)
             y = y + dt * dydt
 
             if self.clamp_output:
-                lim = self.clamp_output if isinstance(self.clamp_output, (int, float)) else 1.0
+                lim = (
+                    self.clamp_output
+                    if isinstance(self.clamp_output, (int, float))
+                    else 1.0
+                )
                 y = y.clamp(-lim, lim)
 
         return y.view(*batch, B * k)

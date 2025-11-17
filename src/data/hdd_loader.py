@@ -6,8 +6,10 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset
 import torchvision.transforms as T
-from PIL import (Image, ImageFile)
+from PIL import Image, ImageFile
+
 ImageFile.LOAD_TRUNCATED_IMAGES = True
+
 
 class HDDLoader(Dataset):
     """
@@ -36,17 +38,21 @@ class HDDLoader(Dataset):
         camera_dir: str,
         sensor_dir: str,
         sequence_length: int,
-        sequences: Optional[Sequence[str]] = None,   # 明示列挙。Noneなら両方に存在するseqを自動探索
+        sequences: Optional[
+            Sequence[str]
+        ] = None,  # 明示列挙。Noneなら両方に存在するseqを自動探索
         stride: int = 1,
         frame_size: Tuple[int, int] = (224, 224),
-        camera_transform: Optional[Callable] = None, # 追加transform（ToTensor/Normalize前に入れたい場合は下を上書き）
+        camera_transform: Optional[
+            Callable
+        ] = None,  # 追加transform（ToTensor/Normalize前に入れたい場合は下を上書き）
         imagenet_normalize: bool = True,
         center_crop: Optional[Tuple[int, int]] = None,
         sensor_normalize: bool = False,
-        sensor_mean: Optional[np.ndarray] = None,    # shape=(D,)
-        sensor_std: Optional[np.ndarray] = None,     # shape=(D,)
+        sensor_mean: Optional[np.ndarray] = None,  # shape=(D,)
+        sensor_std: Optional[np.ndarray] = None,  # shape=(D,)
         sensor_dtype: torch.dtype = torch.float32,
-        exclude_features: Optional[List[str]] = None, # 除外するセンサー特徴量のリスト
+        exclude_features: Optional[List[str]] = None,  # 除外するセンサー特徴量のリスト
     ):
         super().__init__()
         assert sequence_length > 0 and stride > 0
@@ -109,7 +115,7 @@ class HDDLoader(Dataset):
                 continue
             if s.ndim != 2 or s.shape[0] < sequence_length:
                 continue
-            
+
             L = min(len(frames), len(s))
 
             if L < sequence_length:
@@ -119,13 +125,15 @@ class HDDLoader(Dataset):
             if n_subseq <= 0:
                 continue
 
-            self.sequences.append({
-                "name": seq,
-                "frames_all": frames,
-                "sensor_path": sfile,
-                "L": L,
-                "n_subseq": n_subseq,
-            })
+            self.sequences.append(
+                {
+                    "name": seq,
+                    "frames_all": frames,
+                    "sensor_path": sfile,
+                    "L": L,
+                    "n_subseq": n_subseq,
+                }
+            )
 
     def __len__(self):
         return sum(s["n_subseq"] for s in self.sequences)
@@ -173,7 +181,11 @@ class HDDLoader(Dataset):
 
         # 特徴量を除外
         if self.exclude_features:
-            exclude_indices = [self.FEATURE_KEYS.index(feat) for feat in self.exclude_features if feat in self.FEATURE_KEYS]
+            exclude_indices = [
+                self.FEATURE_KEYS.index(feat)
+                for feat in self.exclude_features
+                if feat in self.FEATURE_KEYS
+            ]
             if exclude_indices:
                 s_win = np.delete(s_win, exclude_indices, axis=1)
 
