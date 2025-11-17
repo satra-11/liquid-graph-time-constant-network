@@ -15,6 +15,8 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, random_split
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+import mlflow
+import mlflow.pytorch
 
 from src.tasks import (
     NetworkComparator,
@@ -58,135 +60,123 @@ def main():
     save_dir = Path(args.save_dir)
     save_dir.mkdir(parents=True, exist_ok=True)
     
-    # データセット作成
-    print("Loading dataset from HDD...")
-    
-    full_dataset = HDDLoader(
-        camera_dir=os.path.join(args.data_dir, 'camera'),
-        sensor_dir=os.path.join(args.data_dir, 'sensor'),
-        sequence_length=args.sequence_length,
-        exclude_features=["rtk_pos_info", "rtk_track_info"],
-    )
-    
-    # 訓練・検証・テストに分割
-    total_size = len(full_dataset)
-    train_size = int(0.7 * total_size)
-    val_size = int(0.15 * total_size)
-    test_size = total_size - train_size - val_size
-    
-    train_dataset, val_dataset, test_dataset = random_split(
-        full_dataset, [train_size, val_size, test_size]
-    )
-    
-    # データローダー作成
-    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False)
-    test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)
-    
-    # モデル作成
-    print("Creating models...")
-    lgtcn_model = CfGCNController(
-        frame_height=64,
-        frame_width=64,
-        hidden_dim=args.hidden_dim,
-        output_dim=6,
-        K=args.K
-    )
-    
-    ltcn_model = LTCNController(
-        frame_height=64,
-        frame_width=64,
-        output_dim=6,
-        hidden_dim=args.hidden_dim,
-    )
-    
-    # LGTCN訓練
-    print("Training LGTCN...")
-    lgtcn_train_losses, lgtcn_val_losses = train_model(
-        lgtcn_model, train_loader, val_loader,
-        num_epochs=args.epochs, learning_rate=args.lr, device=device
-    )
-    
-    # LTCN訓練
-    print("Training LTCN...")
-    ltcn_train_losses, ltcn_val_losses = train_model(
-        ltcn_model, train_loader, val_loader,
-        num_epochs=args.epochs, learning_rate=args.lr, device=device
-    )
-    
-    # 学習曲線をプロット
-    plt.figure(figsize=(12, 4))
-    
-    plt.subplot(1, 2, 1)
-    plt.plot(lgtcn_train_losses, label='LGTCN Train')
-    plt.plot(ltcn_train_losses, label='LTCN Train')
-    plt.xlabel('Epoch')
-    plt.ylabel('Loss')
-    plt.title('Training Loss')
-    plt.legend()
-    plt.grid(True)
-    
-    plt.subplot(1, 2, 2)
-    plt.plot(lgtcn_val_losses, label='LGTCN Val')
-    plt.plot(ltcn_val_losses, label='LTCN Val')
-    plt.xlabel('Epoch')
-    plt.ylabel('Loss')
-    plt.title('Validation Loss')
-    plt.legend()
-    plt.grid(True)
-    
-    plt.tight_layout()
-    plt.savefig(save_dir / "training_curves.png")
-    plt.show()
-    
-    # モデル保存
-    torch.save(lgtcn_model.state_dict(), save_dir / "lgtcn_model.pth")
-    torch.save(ltcn_model.state_dict(), save_dir / "ltcn_model.pth")
-    
-    # 訓練情報保存
-    training_info = {
-        'args': vars(args),
-        'lgtcn_train_losses': lgtcn_train_losses,
-        'lgtcn_val_losses': lgtcn_val_losses,
-        'ltcn_train_losses': ltcn_train_losses,
-        'ltcn_val_losses': ltcn_val_losses,
-    }
-    lgtcn_model.eval()
-    ltcn_model.eval()
+    with mlflow.start_run() as run:
+        print(f"MLflow Run ID: {run.info.run_id}")
+        mlflow.log_params(vars(args))
 
-    with torch.no_grad():
-        try:
-            test_frames, test_sensors, _, _ = next(iter(test_loader))
-        except StopIteration:
-            raise RuntimeError("Test loader が空です。テストデータが読み込まれているか確認してください。")
+        # データセット作成
+        print("Loading dataset from HDD...")
+        
+        full_dataset = HDDLoader(
+            camera_dir=os.path.join(args.data_dir, 'camera'),
+            sensor_dir=os.path.join(args.data_dir, 'sensor'),
+            sequence_length=args.sequence_length,
+            exclude_features=["rtk_pos_info", "rtk_track_info"],
+        )
+        
+        # 訓練・検証・テストに分割
+        total_size = len(full_dataset)
+        train_size = int(0.7 * total_size)
+        val_size = int(0.15 * total_size)
+        test_size = total_size - train_size - val_size
+        
+        train_dataset, val_dataset, test_dataset = random_split(
+            full_dataset, [train_size, val_size, test_size]
+        )
+        
+        # データローダー作成
+        train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
+        val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False)
+        test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)
+        
+        # モデル作成
+        print("Creating models...")
+        lgtcn_model = CfGCNController(
+            frame_height=64,
+            frame_width=64,
+            hidden_dim=args.hidden_dim,
+            output_dim=6,
+            K=args.K
+        )
+        
+        ltcn_model = LTCNController(
+            frame_height=64,
+            frame_width=64,
+            output_dim=6,
+            hidden_dim=args.hidden_dim,
+        )
+        
+        # LGTCN訓練
+        print("Training LGTCN...")
+        train_model(
+            lgtcn_model, "LGTCN", train_loader, val_loader,
+            num_epochs=args.epochs, learning_rate=args.lr, device=device
+        )
+        
+        # LTCN訓練
+        print("Training LTCN...")
+        train_model(
+            ltcn_model, "LTCN", train_loader, val_loader,
+            num_epochs=args.epochs, learning_rate=args.lr, device=device
+        )
+        
+        # モデル保存 (MLflow)
+        print("Logging models to MLflow...")
+        mlflow.pytorch.log_model(lgtcn_model, "lgtcn_model")
+        mlflow.pytorch.log_model(ltcn_model, "ltcn_model")
 
-    # デバイスへ転送
-    test_frames = test_frames.to(device)
-    test_sensors = test_sensors.to(device)
+        # 評価のためにテストデータを1バッチ取得
+        lgtcn_model.eval()
+        ltcn_model.eval()
 
-    # evaluate_networks に渡す dict
-    test_data = {
-        "clean_frames": test_frames,  # 汚染なしフレーム（評価時に内部で汚染レベルを変えて比較）
-        "sensors": test_sensors,      # 教師信号（最後のタイムステップ等を使って比較）
-        # "adjacency": は evaluate_networks 内で None に設定されるため不要
-    }
+        with torch.no_grad():
+            try:
+                test_frames, test_sensors, _, _ = next(iter(test_loader))
+            except StopIteration:
+                raise RuntimeError("Test loader が空です。テストデータが読み込まれているか確認してください。")
 
-    # 評価の実行
-    results = evaluate_networks(lgtcn_model, ltcn_model, test_data, device)
-    
-    # 結果を保存
-    comparator = NetworkComparator(device)
-    comparator.save_results(results, save_dir / "comparison_results.json")
-    comparator.visualize_comparison(results, save_dir / "comparison_plots.png")
-    
-    with open(save_dir / "training_info.json", 'w') as f:
-        json.dump(training_info, f, indent=2)
-    
+        # デバイスへ転送
+        test_frames = test_frames.to(device)
+        test_sensors = test_sensors.to(device)
+
+        # evaluate_networks に渡す dict
+        test_data = {
+            "clean_frames": test_frames,
+            "sensors": test_sensors,
+        }
+
+        # 評価の実行
+        results = evaluate_networks(lgtcn_model, ltcn_model, test_data, device)
+        
+        # 結果を保存
+        comparator = NetworkComparator(device)
+        results_path = save_dir / "comparison_results.json"
+        plots_path = save_dir / "comparison_plots.png"
+        
+        # `save_results` は存在しないため、直接jsonをダンプ
+        with open(results_path, 'w') as f:
+            json.dump(results, f, indent=2)
+            
+        comparator.visualize_comparison(results, plots_path)
+
+        # 評価結果をMLflowに記録
+        print("Logging artifacts to MLflow...")
+        mlflow.log_artifact(str(plots_path))
+        mlflow.log_artifact(str(results_path))
+        
+        # 最終的なサマリーメトリクスを記録
+        summary = results.get('comparison', {}).get('winner_by_metric', {})
+        for metric, values in summary.items():
+            mlflow.log_metric(f"LGTCN_avg_{metric}", values.get('lgtcn_avg', 0))
+            mlflow.log_metric(f"LTCN_avg_{metric}", values.get('ltcn_avg', 0))
+
     print(f"Training completed! Results saved to {save_dir}")
+    print(f"To view results, run 'mlflow ui' in the directory '{Path.cwd()}' and open http://localhost:5000")
 
 
 def train_model(
     model: LTCNController | CfGCNController,
+    model_name: str,
     train_loader: DataLoader,
     val_loader: DataLoader,
     num_epochs: int = 100,
@@ -202,15 +192,12 @@ def train_model(
 
     start_time = time.time()
     
-    train_losses = []
-    val_losses = []
-    
     for epoch in range(num_epochs):
         # 訓練フェーズ
         model.train()
         epoch_train_loss = 0.0
         
-        for frames, sensors, _, _ in tqdm(train_loader, desc=f"Epoch {epoch+1}/{num_epochs} [TRAIN]"):
+        for frames, sensors, _, _ in tqdm(train_loader, desc=f"Epoch {epoch+1}/{num_epochs} [TRAIN - {model_name}]"):
             frames = frames.to(device)
             sensors = sensors.to(device)
             
@@ -227,14 +214,14 @@ def train_model(
             epoch_train_loss += loss.item()
         
         avg_train_loss = epoch_train_loss / len(train_loader)
-        train_losses.append(avg_train_loss)
+        mlflow.log_metric(f"{model_name} Train Loss", avg_train_loss, step=epoch)
         
         # 検証フェーズ
         model.eval()
         epoch_val_loss = 0.0
         
         with torch.no_grad():
-            for frames, sensors, _, _ in tqdm(val_loader, desc=f"Epoch {epoch+1}/{num_epochs} [VAL]"):
+            for frames, sensors, _, _ in tqdm(val_loader, desc=f"Epoch {epoch+1}/{num_epochs} [VAL - {model_name}]"):
                 frames = frames.to(device)
                 sensors = sensors.to(device)
                 
@@ -245,16 +232,14 @@ def train_model(
                 epoch_val_loss += loss.item()
         
         avg_val_loss = epoch_val_loss / len(val_loader)
-        val_losses.append(avg_val_loss)
+        mlflow.log_metric(f"{model_name} Val Loss", avg_val_loss, step=epoch)
         
         if epoch % 10 == 0:
-            print(f"Epoch {epoch:3d}: Train Loss = {avg_train_loss:.6f}, Val Loss = {avg_val_loss:.6f}")
+            print(f"Epoch {epoch:3d}: Train Loss ({model_name}) = {avg_train_loss:.6f}, Val Loss ({model_name}) = {avg_val_loss:.6f}")
 
     end_time = time.time()
     elapsed_time = end_time - start_time
-    print(f"Training finished in {time.strftime('%H:%M:%S', time.gmtime(elapsed_time))}.")
-    
-    return train_losses, val_losses
+    print(f"Training for {model_name} finished in {time.strftime('%H:%M:%S', time.gmtime(elapsed_time))}.")
 
 
 def evaluate_networks(
