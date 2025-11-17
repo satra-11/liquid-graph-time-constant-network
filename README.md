@@ -18,15 +18,35 @@ cd liquid-graph-time-constant-network
 rye sync
 ```
 # Commands
-### 1. Training
-Start training by executing a command below. The results are generated at /driving_results folder.
+## 1. Training
+Start training by executing the command below. The results will be generated in the `/driving_results` folder by default.
 ```bash
-python3 /src/scripts/train_driving.py
+python3 scripts/train_driving.py
 ```
+
+### Command-Line Arguments
+You can customize the training process using the following arguments:
+| Argument | Type | Default | Description |
+|:---|:---|:---|:---|
+| `--seed` | int | 42 | Random seed for reproducibility. |
+| `--sequence-length` | int | 20 | Length of the input sequences. |
+| `--batch-size` | int | 32 | Batch size for training. |
+| `--epochs` | int | 50 | Number of training epochs. |
+| `--lr` | float | 1e-3 | Learning rate for the optimizer. |
+| `--hidden-dim` | int | 64 | Dimension of the hidden states in the models. |
+| `--K` | int | 2 | Neighborhood size (K-hop) for the LGTCN graph filter. |
+| `--data-dir` | str | `./hdd` | Path to the directory containing the dataset. |
+| `--save-dir` | str | `./driving_results` | Directory to save training results. |
+| `--device` | str | `auto` | Device to use for training (`auto`, `cpu`, `cuda`). |
+
+*Note: `--num-sequences`, `--corruption-rate`, and `--sensor-sequence` are defined but not currently used in the script.*
+
+## 2. Evaluation
+The training script automatically runs an evaluation on the test set after training is complete. The evaluation compares the models' robustness against different levels of input corruption (whiteout noise).
 
 # Tasks
 ## Self-Driving
-This task involves predicting the vehicle's control signals from camera images. The model is trained to output the following CAN bus data:
+This task involves predicting the vehicle's control signals from camera images. The model is trained to output the following 6 CAN bus data signals:
 
 -   **`accel_pedal_info`**: Accelerator pedal depression (0 to 1)
 -   **`brake_pedal_info`**: Brake pedal force or ratio
@@ -34,9 +54,15 @@ This task involves predicting the vehicle's control signals from camera images. 
 -   **`vel_info`**: Vehicle speed
 -   **`yaw_info`**: Yaw rate
 -   **`turn_signal_info`**: Turn signal (left/right)
--   **`rtk_pos_info`**: RTK GPS position information
--   **`rtk_track_info`**: RTK GPS track information
 
+# Results
+After running the training script, the following files will be generated in the specified `--save-dir`:
+
+-   `lgtcn_model.pth` / `ltcn_model.pth`: The trained weights for the LGTCN and LTCN models.
+-   `training_curves.png`: A plot showing the training and validation loss curves for both models.
+-   `training_info.json`: A JSON file containing the training arguments and the loss history for each epoch.
+-   `comparison_plots.png`: Plots comparing the performance (MSE, MAE) of LGTCN and LTCN under various levels of input corruption.
+-   `comparison_results.json`: Detailed numerical results from the comparative evaluation.
 
 # Directory Structure
 ```yaml
