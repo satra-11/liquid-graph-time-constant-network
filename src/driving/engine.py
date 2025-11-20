@@ -1,0 +1,113 @@
+import time
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader
+from tqdm import tqdm
+import mlflow
+
+from src.core.models import CfGCNController, LTCNController
+from src.tasks import NetworkComparator
+
+
+def train_model(
+    model: LTCNController | CfGCNController,
+    model_name: str,
+    train_loader: DataLoader,
+    val_loader: DataLoader,
+    num_epochs: int = 100,
+    learning_rate: float = 1e-3,
+    device: torch.device = None,
+):
+    """モデルを訓練"""
+    device = device or torch.device("cpu")
+    model = model.to(device)
+
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+    criterion = nn.MSELoss()
+
+    start_time = time.time()
+
+    for epoch in range(num_epochs):
+        # 訓練フェーズ
+        model.train()
+        epoch_train_loss = 0.0
+
+        for frames, sensors, _, _ in tqdm(
+            train_loader, desc=f"Epoch {epoch+1}/{num_epochs} [TRAIN - {model_name}]"
+        ):
+            frames = frames.to(device)
+            sensors = sensors.to(device)
+
+            optimizer.zero_grad()
+
+            predictions, _ = model(frames)
+
+            loss = criterion(predictions[:, -1, :], sensors[:, -1, :])
+
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            optimizer.step()
+
+            epoch_train_loss += loss.item()
+
+        avg_train_loss = epoch_train_loss / len(train_loader)
+        mlflow.log_metric(f"{model_name} Train Loss", avg_train_loss, step=epoch)
+
+        # 検証フェーズ
+        model.eval()
+        epoch_val_loss = 0.0
+
+        with torch.no_grad():
+            for frames, sensors, _, _ in tqdm(
+                val_loader, desc=f"Epoch {epoch+1}/{num_epochs} [VAL - {model_name}]"
+            ):
+                frames = frames.to(device)
+                sensors = sensors.to(device)
+
+                predictions, _ = model(frames)
+
+                # 予測の最後のタイムステップと比較
+                loss = criterion(predictions[:, -1, :], sensors[:, -1, :])
+                epoch_val_loss += loss.item()
+
+        avg_val_loss = epoch_val_loss / len(val_loader)
+        mlflow.log_metric(f"{model_name} Val Loss", avg_val_loss, step=epoch)
+
+        if epoch % 10 == 0:
+            print(
+                f"Epoch {epoch:3d}: Train Loss ({model_name}) = {avg_train_loss:.6f}, Val Loss ({model_name}) = {avg_val_loss:.6f}"
+            )
+
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    print(
+        f"Training for {model_name} finished in {time.strftime('%H:%M:%S', time.gmtime(elapsed_time))}."
+    )
+
+
+def evaluate_networks(
+    lgtcn_model: CfGCNController,
+    ltcn_model: LTCNController,
+    test_data: dict,
+    device: torch.device,
+):
+    """LGTCNとLTCNを比較評価"""
+    comparator = NetworkComparator(device)
+
+    # テストデータ準備
+    test_dict = {
+        "clean_frames": test_data["clean_frames"],
+        "sensors": test_data["sensors"],
+        "adjacency": None,
+    }
+
+    print("Comparing LGTCN and LTCN...")
+    results = comparator.compare_networks(
+        lgtcn_model,
+        ltcn_model,
+        test_dict,
+        corruption_levels=[0.0, 0.1, 0.2, 0.3, 0.4, 0.5],
+    )
+
+    return results

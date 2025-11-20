@@ -112,27 +112,28 @@ class LTCNLayer(nn.Module):
                 tau = tau.view(*([1] * len(batch)), B, k).expand(*batch, B, k)
 
             # ---- net_out per block
-            net_out = []
+            net_out_list = []
             # block 0 from input
             if u_t is None:
                 net0 = torch.zeros(*batch, k, device=y.device, dtype=y.dtype)
             else:
                 net0 = self._act(self.W_in(u_t))
-            net_out.append(net0)
+            net_out_list.append(net0)
+
             # blocks 1..B-1 from previous block state
             for j in range(1, B):
                 prev = y[..., j - 1, :]  # (..., k)
                 net_j = self._act(self.W_fwd[j - 1](prev))
-                net_out.append(net_j)
-            net_out = torch.stack(net_out, dim=-2)  # (..., B, k)
+                net_out_list.append(net_j)
+            net_out = torch.stack(net_out_list, dim=-2)  # (..., B, k)
 
             # ---- net_recurr per block (from same block state)
-            net_recurr = []
+            net_recurr_list = []
             for j in range(B):
                 cur = y[..., j, :]  # (..., k)
                 net_r = self._act(self.W_rec[j](cur))
-                net_recurr.append(net_r)
-            net_recurr = torch.stack(net_recurr, dim=-2)  # (..., B, k)
+                net_recurr_list.append(net_r)
+            net_recurr = torch.stack(net_recurr_list, dim=-2)  # (..., B, k)
 
             # ---- decay term: (1/tau) + |net_out| + |net_recurr|
             decay = (1.0 / tau) + net_out.abs() + net_recurr.abs()  # (..., B, k)

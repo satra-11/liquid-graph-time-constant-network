@@ -23,7 +23,7 @@ class NetworkComparator:
     ) -> Dict[str, Any]:
         """LGTCNとLTCNを包括的に比較"""
 
-        results = {"lgtcn": {}, "ltcn": {}, "comparison": {}}
+        results: Dict[str, Any] = {"lgtcn": {}, "ltcn": {}, "comparison": {}}
 
         # 各汚損レベルでテスト
         for corruption_level in corruption_levels:
@@ -95,7 +95,7 @@ class NetworkComparator:
 
     def _generate_comparison_summary(self, results: Dict[str, Any]) -> Dict[str, Any]:
         """比較サマリーを生成"""
-        summary = {
+        summary: Dict[str, Any] = {
             "winner_by_metric": {},
             "robustness_comparison": {},
             "stability_comparison": {},
