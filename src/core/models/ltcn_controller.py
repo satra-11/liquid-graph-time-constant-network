@@ -14,6 +14,7 @@ class LTCNController(nn.Module):
         frame_width: int = 64,
         hidden_dim: int = 64,
         output_dim: int = 6,
+        num_layers: int = 4,
     ):
         super().__init__()
         self.frame_height = frame_height
@@ -21,6 +22,10 @@ class LTCNController(nn.Module):
         self.hidden_dim = hidden_dim
         self.output_dim = output_dim
         self.node_encoder = nn.Linear(128, hidden_dim)
+
+        assert (
+            hidden_dim % num_layers == 0
+        ), "hidden_dim must be divisible by num_layers"
 
         self.feature_extractor = nn.Sequential(
             nn.Conv2d(3, 32, 3, stride=2, padding=1),
@@ -32,8 +37,8 @@ class LTCNController(nn.Module):
             nn.AdaptiveAvgPool2d((8, 8)),
         )
 
-        k_per_block = hidden_dim // 4
-        num_blocks = 4
+        k_per_block = hidden_dim // num_layers
+        num_blocks = num_layers
         self.temporal_processor = LTCNLayer(hidden_dim, k_per_block, num_blocks)
 
         self.control_decoder = nn.Sequential(

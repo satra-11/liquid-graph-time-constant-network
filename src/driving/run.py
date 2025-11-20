@@ -51,6 +51,7 @@ def run_training(args: argparse.Namespace):
             hidden_dim=args.hidden_dim,
             output_dim=6,
             K=args.K,
+            num_layers=args.num_layers_cfgcn,
         )
 
         ltcn_model = LTCNController(
@@ -58,6 +59,7 @@ def run_training(args: argparse.Namespace):
             frame_width=64,
             output_dim=6,
             hidden_dim=args.hidden_dim,
+            num_layers=args.num_layers_ltcn,
         )
 
         # LGTCN訓練

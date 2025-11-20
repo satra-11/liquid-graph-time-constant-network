@@ -17,6 +17,7 @@ class CfGCNController(nn.Module):
         K: int = 2,
         output_dim: int = 6,
         matrix_type: str = "adjacency",
+        num_layers: int = 1,
     ):
         super().__init__()
         self.frame_height = frame_height
@@ -25,6 +26,7 @@ class CfGCNController(nn.Module):
         self.K = K
         self.output_dim = output_dim
         self.matrix_type = matrix_type
+        self.num_layers = num_layers
         self.node_encoder = nn.Linear(128, hidden_dim)
 
         self.feature_extractor = nn.Sequential(
@@ -37,7 +39,9 @@ class CfGCNController(nn.Module):
             nn.AdaptiveAvgPool2d((8, 8)),
         )
 
-        self.temporal_processor = CfGCNLayer(hidden_dim, hidden_dim, K)
+        self.temporal_processor = nn.ModuleList(
+            [CfGCNLayer(hidden_dim, hidden_dim, K) for _ in range(num_layers)]
+        )
 
         self.control_decoder = nn.Sequential(
             nn.Linear(hidden_dim, 128),
@@ -69,15 +73,16 @@ class CfGCNController(nn.Module):
             adjacency = torch.ones(B, T, N, N, device=frames.device)
 
         controls = []
-        current_hidden = hidden_state
+
+        N = node_feats.size(2)
+        if hidden_state is None:
+            hidden_state = torch.zeros(
+                B, self.num_layers, N, self.hidden_dim, device=frames.device
+            )
+
+        current_hiddens = hidden_state.unbind(dim=1)
 
         for t in range(T):
-            if current_hidden is None:
-                N = node_feats.size(2)
-                current_hidden = torch.zeros(
-                    B, N, self.hidden_dim, device=frames.device
-                )
-
             xt = node_feats[:, t, :, :]
 
             A_t = adjacency[:, t, :, :]
@@ -94,17 +99,29 @@ class CfGCNController(nn.Module):
 
             S_powers = compute_s_powers(S_t, self.K)
 
-            next_hidden = self.temporal_processor(
-                current_hidden,
-                xt,
-                S_powers,
-            )
-            control = self.control_decoder(next_hidden.mean(dim=1))
+            h_prev_layers = current_hiddens
+            h_next_layers = []
+
+            # 1st layer
+            h_in = h_prev_layers[0]
+            u_in = xt
+            h_out = self.temporal_processor[0](h_in, u_in, S_powers)
+            h_next_layers.append(h_out)
+
+            # 2nd layer to N
+            for i in range(1, self.num_layers):
+                h_in = h_prev_layers[i]
+                u_in = h_next_layers[i - 1]
+                h_out = self.temporal_processor[i](h_in, u_in, S_powers)
+                h_next_layers.append(h_out)
+
+            final_layer_output = h_next_layers[-1]
+            control = self.control_decoder(final_layer_output.mean(dim=1))
             controls.append(control)
-            current_hidden = next_hidden
+            current_hiddens = tuple(h_next_layers)
 
         controls = torch.stack(controls, dim=1)
-        final_hidden = current_hidden
+        final_hidden = torch.stack(current_hiddens, dim=1)
         attentions = torch.stack(attentions, dim=1)
 
         return controls, final_hidden

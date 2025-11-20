@@ -20,6 +20,8 @@ if __name__ == "__main__":
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--hidden-dim", type=int, default=64)
     parser.add_argument("--K", type=int, default=2)
+    parser.add_argument("--num-layers-ltcn", type=int, default=4)
+    parser.add_argument("--num-layers-cfgcn", type=int, default=1)
     parser.add_argument("--corruption-rate", type=float, default=0.2)
     parser.add_argument("--data-dir", type=str, default="./hdd")
     parser.add_argument("--save-dir", type=str, default="./driving_results")
