@@ -4,6 +4,7 @@ from pathlib import Path
 import json
 import numpy as np
 import torch
+import torch.optim as optim
 import mlflow
 import mlflow.pytorch
 
@@ -62,6 +63,35 @@ def run_training(args: argparse.Namespace):
             num_layers=args.num_layers_ltcn,
         )
 
+        # オプティマイザの作成
+        lgtcn_optimizer = optim.Adam(lgtcn_model.parameters(), lr=args.lr)
+        ltcn_optimizer = optim.Adam(ltcn_model.parameters(), lr=args.lr)
+
+        start_epoch_lgtcn = 0
+        start_epoch_ltcn = 0
+
+        # チェックポイントからの再開
+        if args.resume_from_checkpoint:
+            lgtcn_checkpoint_path = (
+                Path(args.resume_from_checkpoint) / "LGTCN_checkpoint.pth"
+            )
+            if lgtcn_checkpoint_path.exists():
+                print(f"Resuming LGTCN training from {lgtcn_checkpoint_path}")
+                checkpoint = torch.load(lgtcn_checkpoint_path)
+                lgtcn_model.load_state_dict(checkpoint["model_state_dict"])
+                lgtcn_optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+                start_epoch_lgtcn = checkpoint["epoch"]
+
+            ltcn_checkpoint_path = (
+                Path(args.resume_from_checkpoint) / "LTCN_checkpoint.pth"
+            )
+            if ltcn_checkpoint_path.exists():
+                print(f"Resuming LTCN training from {ltcn_checkpoint_path}")
+                checkpoint = torch.load(ltcn_checkpoint_path)
+                ltcn_model.load_state_dict(checkpoint["model_state_dict"])
+                ltcn_optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+                start_epoch_ltcn = checkpoint["epoch"]
+
         # LGTCN訓練
         print("Training LGTCN...")
         train_model(
@@ -69,8 +99,10 @@ def run_training(args: argparse.Namespace):
             "LGTCN",
             train_loader,
             val_loader,
+            optimizer=lgtcn_optimizer,
+            save_dir=save_dir,
             num_epochs=args.epochs,
-            learning_rate=args.lr,
+            start_epoch=start_epoch_lgtcn,
             device=device,
         )
 
@@ -81,8 +113,10 @@ def run_training(args: argparse.Namespace):
             "LTCN",
             train_loader,
             val_loader,
+            optimizer=ltcn_optimizer,
+            save_dir=save_dir,
             num_epochs=args.epochs,
-            learning_rate=args.lr,
+            start_epoch=start_epoch_ltcn,
             device=device,
         )
 

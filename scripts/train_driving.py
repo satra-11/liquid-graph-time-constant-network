@@ -32,6 +32,12 @@ if __name__ == "__main__":
         default=None,
         help="Sensor sequence name for testing (e.g., 201702271017)",
     )
+    parser.add_argument(
+        "--resume-from-checkpoint",
+        type=str,
+        default=None,
+        help="Path to the directory containing checkpoint files to resume training from.",
+    )
     args = parser.parse_args()
 
     start_time = time.time()

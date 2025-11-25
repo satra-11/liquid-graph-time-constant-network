@@ -1,4 +1,5 @@
 import time
+from pathlib import Path
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -15,20 +16,21 @@ def train_model(
     model_name: str,
     train_loader: DataLoader,
     val_loader: DataLoader,
+    optimizer: optim.Optimizer,
+    save_dir: Path,
     num_epochs: int = 100,
-    learning_rate: float = 1e-3,
+    start_epoch: int = 0,
     device: torch.device = None,
 ):
     """モデルを訓練"""
     device = device or torch.device("cpu")
     model = model.to(device)
 
-    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     criterion = nn.MSELoss()
 
     start_time = time.time()
 
-    for epoch in range(num_epochs):
+    for epoch in range(start_epoch, num_epochs):
         # 訓練フェーズ
         model.train()
         epoch_train_loss = 0.0
@@ -78,6 +80,18 @@ def train_model(
             print(
                 f"Epoch {epoch:3d}: Train Loss ({model_name}) = {avg_train_loss:.6f}, Val Loss ({model_name}) = {avg_val_loss:.6f}"
             )
+
+        # チェックポイントの保存
+        save_dir.mkdir(parents=True, exist_ok=True)
+        checkpoint_path = save_dir / f"{model_name}_checkpoint.pth"
+        torch.save(
+            {
+                "epoch": epoch + 1,
+                "model_state_dict": model.state_dict(),
+                "optimizer_state_dict": optimizer.state_dict(),
+            },
+            checkpoint_path,
+        )
 
     end_time = time.time()
     elapsed_time = end_time - start_time
