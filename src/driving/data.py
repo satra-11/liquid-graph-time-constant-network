@@ -32,7 +32,7 @@ def setup_dataloaders(
     train_loader = DataLoader(
         train_dataset,
         batch_size=batch_size,
-        num_workers=16,
+        num_workers=32,
         pin_memory=True,
         shuffle=True,
         persistent_workers=True,
@@ -41,7 +41,7 @@ def setup_dataloaders(
     val_loader = DataLoader(
         val_dataset,
         batch_size=batch_size,
-        num_workers=16,
+        num_workers=32,
         pin_memory=True,
         shuffle=False,
         persistent_workers=True,
@@ -50,7 +50,7 @@ def setup_dataloaders(
     test_loader = DataLoader(
         test_dataset,
         batch_size=batch_size,
-        num_workers=16,
+        num_workers=32,
         pin_memory=True,
         shuffle=False,
         persistent_workers=True,
