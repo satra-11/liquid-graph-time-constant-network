@@ -35,6 +35,8 @@ def setup_dataloaders(
         num_workers=16,
         pin_memory=True,
         shuffle=True,
+        persistent_workers=True,
+        prefetch_factor=4,
     )
     val_loader = DataLoader(
         val_dataset,
@@ -42,6 +44,8 @@ def setup_dataloaders(
         num_workers=16,
         pin_memory=True,
         shuffle=False,
+        persistent_workers=True,
+        prefetch_factor=4,
     )
     test_loader = DataLoader(
         test_dataset,
@@ -49,6 +53,8 @@ def setup_dataloaders(
         num_workers=16,
         pin_memory=True,
         shuffle=False,
+        persistent_workers=True,
+        prefetch_factor=4,
     )
 
     return train_loader, val_loader, test_loader, full_dataset
