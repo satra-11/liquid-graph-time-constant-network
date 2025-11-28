@@ -44,6 +44,20 @@ You can customize the training process using the following arguments:
 ## 2. Evaluation
 The training script automatically runs an evaluation on the test set after training is complete. The evaluation compares the models' robustness against different levels of input corruption (whiteout noise).
 
+## 3. Monitoring with MLflow
+You can monitor the training progress and view the results using MLflow.
+To start the MLflow UI, run the following command in the project root directory:
+
+```bash
+rye run mlflow ui
+```
+
+Then, open your browser and navigate to `http://localhost:5000`.
+You will be able to see:
+- **Experiments**: Training runs and their status.
+- **Metrics**: Real-time plots of training and validation loss.
+- **Artifacts**: Saved models (`.pth`), training curves, and comparison plots.
+
 # Tasks
 ## Self-Driving
 This task involves predicting the vehicle's control signals from camera images. The model is trained to output the following 6 CAN bus data signals:
@@ -146,7 +160,7 @@ flowchart TD
 
 # Dataset
 
-This project utilizes the [Honda Research Institute Driving Dataset (HDD)](https://usa.honda-ri.com/datasets) for training and evaluation.The data can be obtained [here](https://usa.honda-ri.com/hdd). 
+This project utilizes the [Honda Research Institute Driving Dataset (HDD)](https://usa.honda-ri.com/datasets) for training and evaluation.The data can be obtained [here](https://usa.honda-ri.com/hdd).
 
 The `scripts/train_driving.py` script expects the dataset to be organized in the `hdd/` directory with the following structure:
 
@@ -161,4 +175,3 @@ hdd/
     ├───<sequence_0>.npy
     └───<sequence_n>.npy
 ```
-
