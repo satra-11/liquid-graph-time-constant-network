@@ -5,9 +5,11 @@ description = "Add your description here"
 authors = [
     { name = "satra-11", email = "syuzuki546@gmail.com" }
 ]
+readme = "README.md"
+requires-python = ">= 3.10"
+
 dependencies = [
     "torch>=2.7.1",
-    "pytest>=8.4.1",
     "tqdm>=4.67.1",
     "pandas>=2.3.1",
     "seaborn>=0.13.2",
@@ -16,17 +18,16 @@ dependencies = [
     "torchvision>=0.23.0",
     "mlflow>=2.14.1",
 ]
-readme = "README.md"
-requires-python = ">= 3.8"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[tool.rye]
-managed = true
-dev-dependencies = [
+[dependency-groups]
+dev = [
     "mypy>=1.18.2",
+    "pre-commit>=4.5.0",
+    "pytest>=8.4.1",
 ]
 
 [tool.hatch.metadata]

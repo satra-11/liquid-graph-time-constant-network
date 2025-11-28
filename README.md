@@ -11,11 +11,11 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.lock
 ```
-### 2. Rye
+### 2. uv
 ```bash
 git clone https://github.com/satra-11/liquid-graph-time-constant-network
 cd liquid-graph-time-constant-network
-rye sync
+uv sync
 ```
 # Commands
 ## 1. Training
@@ -49,7 +49,7 @@ You can monitor the training progress and view the results using MLflow.
 To start the MLflow UI, run the following command in the project root directory:
 
 ```bash
-rye run mlflow ui
+uv run mlflow ui
 ```
 
 Then, open your browser and navigate to `http://localhost:5000`.
