@@ -54,11 +54,15 @@ class LTCNController(nn.Module):
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         B, T, C, H, W = frames.shape
 
-        frames_flat = frames.view(-1, C, H, W)
-        features = self.feature_extractor(frames_flat)
+        if C == 128 and H == 8 and W == 8:
+            features = frames
+        else:
+            frames_flat = frames.view(-1, C, H, W)
+            features = self.feature_extractor(frames_flat)
+            features = features.view(B, T, 128, 8, 8)
 
-        features = features.view(B, T, 128, 8, 8).permute(0, 1, 3, 4, 2)
-        node_feats = features.view(B, T, 64, 128)
+        features = features.permute(0, 1, 3, 4, 2)
+        node_feats = features.reshape(B, T, 64, 128)
         node_feats = self.node_encoder(node_feats)
 
         controls = []

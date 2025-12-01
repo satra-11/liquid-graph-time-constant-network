@@ -42,6 +42,7 @@ def run_training(args: argparse.Namespace):
             data_dir=args.data_dir,
             sequence_length=args.sequence_length,
             batch_size=args.batch_size,
+            processed_dir=args.processed_dir,
         )
 
         # モデル作成

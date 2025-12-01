@@ -15,7 +15,7 @@ wheels/
 .vscode/
 
 
-/hdd
+/data
 /driving_results
 
 /mlruns

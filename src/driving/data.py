@@ -1,3 +1,4 @@
+from typing import Optional
 import os
 from torch.utils.data import DataLoader, random_split, Dataset
 from src.data import HDDLoader
@@ -7,6 +8,7 @@ def setup_dataloaders(
     data_dir: str,
     sequence_length: int,
     batch_size: int,
+    processed_dir: Optional[str] = None,
 ) -> tuple[DataLoader, DataLoader, DataLoader, Dataset]:
     """データセットを準備し、データローダーを作成する"""
     print("Loading dataset from HDD...")
@@ -14,6 +16,7 @@ def setup_dataloaders(
     full_dataset = HDDLoader(
         camera_dir=os.path.join(data_dir, "camera"),
         sensor_dir=os.path.join(data_dir, "sensor"),
+        processed_dir=processed_dir,
         sequence_length=sequence_length,
         exclude_features=["rtk_pos_info", "rtk_track_info"],
     )

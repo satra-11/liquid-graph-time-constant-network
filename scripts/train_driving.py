@@ -23,7 +23,8 @@ if __name__ == "__main__":
     parser.add_argument("--num-layers-ltcn", type=int, default=4)
     parser.add_argument("--num-layers-cfgcn", type=int, default=1)
     parser.add_argument("--corruption-rate", type=float, default=0.2)
-    parser.add_argument("--data-dir", type=str, default="./hdd")
+    parser.add_argument("--data-dir", type=str, default="/data/raw")
+    parser.add_argument("--processed-dir", type=str, default="/data/processed")
     parser.add_argument("--save-dir", type=str, default="./driving_results")
     parser.add_argument("--device", type=str, default="auto")
     parser.add_argument(

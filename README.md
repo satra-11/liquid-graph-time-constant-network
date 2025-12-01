@@ -18,7 +18,14 @@ cd liquid-graph-time-constant-network
 uv sync
 ```
 # Commands
-## 1. Training
+## 1. Feature Extraction (Optional but Recommended)
+To speed up training, you can pre-compute CNN features from the raw images.
+```bash
+python3 scripts/extract_features.py
+```
+This will read images from `/data/raw` and save `.npy` features to `/data/processed`.
+
+## 2. Training
 Start training by executing the command below. The results will be generated in the `/driving_results` folder by default.
 ```bash
 python3 scripts/train_driving.py
@@ -35,7 +42,8 @@ You can customize the training process using the following arguments:
 | `--lr` | float | 1e-3 | Learning rate for the optimizer. |
 | `--hidden-dim` | int | 64 | Dimension of the hidden states in the models. |
 | `--K` | int | 2 | Neighborhood size (K-hop) for the LGTCN graph filter. |
-| `--data-dir` | str | `./hdd` | Path to the directory containing the dataset. |
+| `--data-dir` | str | `/data/raw` | Path to the directory containing the raw dataset. |
+| `--processed-dir` | str | `/data/processed` | Path to the directory containing processed features. |
 | `--save-dir` | str | `./driving_results` | Directory to save training results. |
 | `--device` | str | `auto` | Device to use for training (`auto`, `cpu`, `cuda`). |
 
@@ -85,7 +93,9 @@ After running the training script, the following files will be generated in the 
 ├───requirements-dev.lock
 ├───requirements.lock
 ├───driving_results/
-├───hdd/  # The training data is not included in this repository
+├───data/
+│   ├───raw/       # Raw HDD dataset
+│   └───processed/ # Pre-computed CNN features
 ├───scripts/
 ├───src/
 │   ├───layers/
@@ -162,16 +172,20 @@ flowchart TD
 
 This project utilizes the [Honda Research Institute Driving Dataset (HDD)](https://usa.honda-ri.com/datasets) for training and evaluation.The data can be obtained [here](https://usa.honda-ri.com/hdd).
 
-The `scripts/train_driving.py` script expects the dataset to be organized in the `hdd/` directory with the following structure:
+The scripts expect the dataset to be organized in the `/data` directory with the following structure:
 
 ```
-hdd/
-├───camera/
-│   ├───<sequence_0>/
-│   │   ├───00000.jpg
-│   │   └───...
-│   └───<sequence_n>/
-└───sensor/
+/data/
+├───raw/
+│   ├───camera/
+│   │   ├───<sequence_0>/
+│   │   │   ├───00000.jpg
+│   │   │   └───...
+│   │   └───<sequence_n>/
+│   └───sensor/
+│       ├───<sequence_0>.npy
+│       └───<sequence_n>.npy
+└───processed/
     ├───<sequence_0>.npy
     └───<sequence_n>.npy
 ```

@@ -53,11 +53,13 @@ class HDDLoader(Dataset):
         sensor_std: Optional[np.ndarray] = None,  # shape=(D,)
         sensor_dtype: torch.dtype = torch.float32,
         exclude_features: Optional[List[str]] = None,  # 除外するセンサー特徴量のリスト
+        processed_dir: Optional[str] = None,  # 追加: 処理済み特徴量のディレクトリ
     ):
         super().__init__()
         assert sequence_length > 0 and stride > 0
         self.camera_dir = camera_dir
         self.sensor_dir = sensor_dir
+        self.processed_dir = processed_dir
         self.sequence_length = sequence_length
         self.stride = stride
         self.sensor_normalize = sensor_normalize
@@ -86,27 +88,46 @@ class HDDLoader(Dataset):
                 os.path.splitext(os.path.basename(p))[0]
                 for p in glob(os.path.join(self.sensor_dir, "*.npy"))
             }
-            cam_candidates = {
-                os.path.basename(d)
-                for d in glob(os.path.join(self.camera_dir, "*"))
-                if os.path.isdir(d)
-            }
+            if self.processed_dir:
+                cam_candidates = {
+                    os.path.splitext(os.path.basename(p))[0]
+                    for p in glob(os.path.join(self.processed_dir, "*.npy"))
+                }
+            else:
+                cam_candidates = {
+                    os.path.basename(d)
+                    for d in glob(os.path.join(self.camera_dir, "*"))
+                    if os.path.isdir(d)
+                }
             seq_list = sorted(sensor_candidates & cam_candidates)
         else:
             seq_list = list(sequences)
 
         self.sequences: List[Dict] = []
         for seq in seq_list:
-            cam_dir = os.path.join(self.camera_dir, seq)
             sfile = os.path.join(self.sensor_dir, f"{seq}.npy")
-            if not (os.path.isdir(cam_dir) and os.path.isfile(sfile)):
-                continue
 
-            frames = []
-            frames.extend(glob(os.path.join(cam_dir, "*.jpg")))
-            if not frames:
-                continue
-            frames = sorted(frames)
+            if self.processed_dir:
+                pfile = os.path.join(self.processed_dir, f"{seq}.npy")
+                if not (os.path.isfile(pfile) and os.path.isfile(sfile)):
+                    continue
+                # 特徴量ファイルの長さを取得
+                try:
+                    # mmap_mode="r" でヘッダだけ読む
+                    feat = np.load(pfile, allow_pickle=False, mmap_mode="r")
+                    L_frames = feat.shape[0]
+                except Exception:
+                    continue
+            else:
+                cam_dir = os.path.join(self.camera_dir, seq)
+                if not (os.path.isdir(cam_dir) and os.path.isfile(sfile)):
+                    continue
+                frames = glob(os.path.join(cam_dir, "*.jpg"))
+                if not frames:
+                    continue
+                frames = sorted(frames)
+                L_frames = len(frames)
+                pfile = None
 
             # センサ読み込み（形だけ確認・長さ合わせは後段でも実施）
             try:
@@ -116,7 +137,7 @@ class HDDLoader(Dataset):
             if s.ndim != 2 or s.shape[0] < sequence_length:
                 continue
 
-            L = min(len(frames), len(s))
+            L = min(L_frames, len(s))
 
             if L < sequence_length:
                 continue
@@ -125,15 +146,18 @@ class HDDLoader(Dataset):
             if n_subseq <= 0:
                 continue
 
-            self.sequences.append(
-                {
-                    "name": seq,
-                    "frames_all": frames,
-                    "sensor_path": sfile,
-                    "L": L,
-                    "n_subseq": n_subseq,
-                }
-            )
+            seq_info = {
+                "name": seq,
+                "sensor_path": sfile,
+                "L": L,
+                "n_subseq": n_subseq,
+            }
+            if self.processed_dir:
+                seq_info["processed_path"] = pfile
+            else:
+                seq_info["frames_all"] = frames
+
+            self.sequences.append(seq_info)
 
     def __len__(self):
         return sum(s["n_subseq"] for s in self.sequences)
@@ -168,13 +192,21 @@ class HDDLoader(Dataset):
         end = start + self.sequence_length
         end = min(end, meta["L"])  # 念のため
 
-        # ---- 画像読み込み ----
-        imgs = []
-        for p in meta["frames_all"][start:end]:
-            with Image.open(p) as im:
-                im = im.convert("RGB")
-                imgs.append(self.camera_tf(im))
-        video = torch.stack(imgs, dim=0)  # [T, C, H, W]
+        # ---- 画像/特徴量読み込み ----
+        if "processed_path" in meta:
+            # 特徴量をロード
+            p_mem = np.load(meta["processed_path"], allow_pickle=False, mmap_mode="r")
+            # [T, 128, 8, 8]
+            feat_win = np.asarray(p_mem[start:end], dtype=np.float32).copy()
+            video = torch.from_numpy(feat_win)
+        else:
+            # 画像読み込み
+            imgs = []
+            for p in meta["frames_all"][start:end]:
+                with Image.open(p) as im:
+                    im = im.convert("RGB")
+                    imgs.append(self.camera_tf(im))
+            video = torch.stack(imgs, dim=0)  # [T, C, H, W]
 
         s_mem = np.load(meta["sensor_path"], allow_pickle=False, mmap_mode="r")
         s_win = np.asarray(s_mem[start:end], dtype=np.float64).copy()  # [T, D]
