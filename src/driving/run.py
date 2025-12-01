@@ -1,17 +1,16 @@
 import argparse
 import random
 from pathlib import Path
-import json
 import numpy as np
 import torch
 import torch.optim as optim
 import mlflow
 import mlflow.pytorch
 
-from src.tasks import NetworkComparator
+
 from src.core.models import CfGCNController, LTCNController
 from src.driving.data import setup_dataloaders
-from src.driving.engine import train_model, evaluate_networks
+from src.driving.engine import train_model
 
 
 def run_training(args: argparse.Namespace):
@@ -125,53 +124,6 @@ def run_training(args: argparse.Namespace):
         print("Logging models to MLflow...")
         mlflow.pytorch.log_model(lgtcn_model, "lgtcn_model")
         mlflow.pytorch.log_model(ltcn_model, "ltcn_model")
-
-        # 評価のためにテストデータを1バッチ取得
-        lgtcn_model.eval()
-        ltcn_model.eval()
-
-        with torch.no_grad():
-            try:
-                test_frames, test_sensors, _, _ = next(iter(test_loader))
-            except StopIteration:
-                raise RuntimeError(
-                    "Test loader が空です。テストデータが読み込まれているか確認してください。"
-                )
-
-        # デバイスへ転送
-        test_frames = test_frames.to(device)
-        test_sensors = test_sensors.to(device)
-
-        # evaluate_networks に渡す dict
-        test_data = {
-            "clean_frames": test_frames,
-            "sensors": test_sensors,
-        }
-
-        # 評価の実行
-        results = evaluate_networks(lgtcn_model, ltcn_model, test_data, device)
-
-        # 結果を保存
-        comparator = NetworkComparator(device)
-        results_path = save_dir / "comparison_results.json"
-        plots_path = save_dir / "comparison_plots.png"
-
-        # `save_results` は存在しないため、直接jsonをダンプ
-        with open(results_path, "w") as f:
-            json.dump(results, f, indent=2)
-
-        comparator.visualize_comparison(results, plots_path)
-
-        # 評価結果をMLflowに記録
-        print("Logging artifacts to MLflow...")
-        mlflow.log_artifact(str(plots_path))
-        mlflow.log_artifact(str(results_path))
-
-        # 最終的なサマリーメトリクスを記録
-        summary = results.get("comparison", {}).get("winner_by_metric", {})
-        for metric, values in summary.items():
-            mlflow.log_metric(f"LGTCN_avg_{metric}", values.get("lgtcn_avg", 0))
-            mlflow.log_metric(f"LTCN_avg_{metric}", values.get("ltcn_avg", 0))
 
     print(f"Training completed! Results saved to {save_dir}")
     print(
