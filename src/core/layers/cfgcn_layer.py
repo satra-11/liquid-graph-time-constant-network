@@ -25,10 +25,8 @@ class CfGCNLayer(nn.Module):
         self.b = nn.Parameter(torch.ones(1, hidden_dim) * 0.1)
 
     def forward(self, x: torch.Tensor, u: torch.Tensor, S_powers, t: float = 1.0):
-        f_sigma = F.relu(self.B_hat(u, S_powers) + self.bu) + F.relu(
-            self.A_hat(x, S_powers) + self.bx
-        )
         f_x = F.relu(self.A_hat(x, S_powers) + self.bx)
+        f_sigma = F.relu(self.B_hat(u, S_powers) + self.bu) + f_x
         Dxf = (self.A_hat(x, S_powers) + self.bx > 0).to(
             x.dtype
         )  # Approximate D_x(A_hat_S(x)) by A_hat_S(x) itself for efficiency
