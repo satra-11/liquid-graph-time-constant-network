@@ -130,8 +130,8 @@ def extract_features(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data-dir", type=str, default="/data/raw")
-    parser.add_argument("--output-dir", type=str, default="/data/processed")
+    parser.add_argument("--data-dir", type=str, default="./data/raw")
+    parser.add_argument("--output-dir", type=str, default="./data/processed")
     parser.add_argument("--batch-size", type=int, default=64)
     parser.add_argument("--device", type=str, default="cuda")
     args = parser.parse_args()
