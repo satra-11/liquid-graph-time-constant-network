@@ -103,42 +103,6 @@ This task involves predicting the vehicle's control signals from camera images. 
 
 -----
 
-## Results
-
-After running the training script, the following files will be generated in the specified `--save-dir`:
-
-  - `lgtcn_model.pth` / `ltcn_model.pth`: The trained weights for the LGTCN and LTCN models.
-  - `training_curves.png`: A plot showing the training and validation loss curves for both models.
-  - `training_info.json`: A JSON file containing the training arguments and the loss history for each epoch.
-  - `comparison_plots.png`: Plots comparing the performance (MSE, MAE) of LGTCN and LTCN under various levels of input corruption.
-  - `comparison_results.json`: Detailed numerical results from the comparative evaluation.
-
------
-
-## Directory Structure
-
-```yaml
-├───pyproject.toml
-├───README.md
-├───requirements-dev.lock
-├───requirements.lock
-├───driving_results/
-├───data/
-│   ├───raw/       # Raw HDD dataset
-│   └───processed/ # Pre-computed CNN features
-├───scripts/
-├───src/
-│   ├───layers/
-│   ├───models/
-│   ├───tasks/
-│   └───utils/
-└───test/
-```
-
-※ For HDD see [Dataset](https://www.google.com/search?q=%23dataset) section below.
-
------
-
 ## Model Structures
 
 The `scripts/train_driving.py` script follows the workflow below to train and evaluate the LGTCN and LTCN models.
@@ -208,15 +172,49 @@ flowchart TD
   class L_IN,L_OUT,R_IN,R_OUT,RA,RADJ,RH0 io;
 ```
 
+### Implementation Note: Deviation from Eq. 20 for Stability
+
+This repository implements a **numerically stable approximation** of the closed-form solution described in the LGTCN paper.
+
+While the original derivation (Theorem 1, Eq. 20) is theoretically rigorous, it involves a term proportional to $1/x$ and a manual derivative approximation ($D_x$). In practice, we observed that these terms lead to **vanishing gradients (saturation)** and numerical instability when the hidden state approaches zero.
+
+To address this, we replaced the explicit division and manual derivative with a **Learned Gating Mechanism** (parameterized by a neural network layer). This modification avoids singularities and ensures smooth gradient flow, while preserving the core "Liquid" dynamics—adaptivity and causality—of the original architecture.
+
 -----
 
-## Implementation Note: Numerical Stability
+## Results
 
-This repository implements a **numerically stable approximation** of the closed-form solution described in the LGTCN paper (Theorem 1, Eq. 20).
+After running the training script, the following files will be generated in the specified `--save-dir`:
 
-In the original derivation, the closed-form solution involves a term implicitly dependent on $1/x$. In practice, directly implementing this term leads to **gradient explosion and numerical instability** when the hidden state $x$ approaches zero (singularity).
+  - `lgtcn_model.pth` / `ltcn_model.pth`: The trained weights for the LGTCN and LTCN models.
+  - `training_curves.png`: A plot showing the training and validation loss curves for both models.
+  - `training_info.json`: A JSON file containing the training arguments and the loss history for each epoch.
+  - `comparison_plots.png`: Plots comparing the performance (MSE, MAE) of LGTCN and LTCN under various levels of input corruption.
+  - `comparison_results.json`: Detailed numerical results from the comparative evaluation.
 
-To address this, my implementation replaces the explicit division with a learned **Sigmoid Gating Mechanism**, inspired by the stability improvements in standard Closed-form Continuous (CfC) networks. This modification preserves the theoretical properties of Liquid Time-Constant dynamics—such as adaptivity and causality—while ensuring robust training convergence.
+-----
+
+## Directory Structure
+
+```yaml
+├───pyproject.toml
+├───README.md
+├───requirements-dev.lock
+├───requirements.lock
+├───driving_results/
+├───data/
+│   ├───raw/       # Raw HDD dataset
+│   └───processed/ # Pre-computed CNN features
+├───scripts/
+├───src/
+│   ├───layers/
+│   ├───models/
+│   ├───tasks/
+│   └───utils/
+└───test/
+```
+
+※ For HDD see [Dataset](https://www.google.com/search?q=%23dataset) section below.
 
 -----
 
