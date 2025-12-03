@@ -37,4 +37,4 @@ class CfGCNLayer(nn.Module):
         coeff = torch.sigmoid(-(self.b + f_x + fi) * t + math.pi)
         sigma_u = torch.tanh(self.B_state(u, S_powers))
         x_new = (x * coeff - sigma_u) * torch.sigmoid(2 * f_sigma) + sigma_u
-        return torch.clamp(x_new, -1.0, 1.0)
+        return x_new
