@@ -30,7 +30,7 @@ uv sync
 
 ### 1\. Feature Extraction (Optional but Recommended)
 
-To speed up training, you can pre-compute CNN features from the raw images.
+To speed up training, you can pre-compute features using a pre-trained ResNet18 backbone. This process extracts high-level semantic features from raw images and reduces them to a compact representation.
 
 ```bash
 python3 scripts/extract_features.py
@@ -149,7 +149,7 @@ flowchart TD
   subgraph L["LTCN"]
     direction TB
     LA["frames <br> (B×T×H×W×C)"]
-      --> LB["CNN<br>→(B·T)×128×8×8"]
+      --> LB["ResNet18<br>→(B·T)×128×8×8"]
       --> LC["reshape/permute <br>→ B×T×64×128"]
       --> LD["encoder <br>(128→H) → B×T×64×H"]
       --> LF["LTCNLayer:<br>(h_t, x_t)→ h_{t+1}"]
@@ -177,7 +177,7 @@ flowchart TD
     RADJ["adjacency (B×T×N×N)/None"]:::io
     RH0["hidden_state (B×N×H)/None"]:::io
 
-    RA --> RB["CNN → (B·T)×128×8×8"]
+    RA --> RB["ResNet18 → (B·T)×128×8×8"]
     RB --> RC["reshape/permute → B×T×64×128"]
     RC --> RD["node_encoder (128→H) → B×T×64×H"]
 
@@ -185,8 +185,8 @@ flowchart TD
     RD -- "u_t" --> RH
     RADJ -. "S_powers" .-> RH
 
-    RH --> RQ["control_decoder → (B×8)"]
-    RQ --> RO1["controls (B×T×8)"]
+    RH --> RQ["control_decoder → (B×6)"]
+    RQ --> RO1["controls (B×T×6)"]
     RH --> RO2["final_hidden (B×N×H)"]
 
     subgraph R_IN["Inputs"]

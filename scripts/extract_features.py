@@ -15,21 +15,28 @@ from tqdm import tqdm
 
 
 # Define the CNN architecture (same as in controllers)
+import torchvision.models as models
+
+
 class FeatureExtractor(nn.Module):
     def __init__(self):
         super().__init__()
-        self.cnn = nn.Sequential(
-            nn.Conv2d(3, 32, 3, stride=2, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(32, 64, 3, stride=2, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(64, 128, 3, stride=2, padding=1),
-            nn.ReLU(),
-            nn.AdaptiveAvgPool2d((8, 8)),
-        )
+        resnet = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
+        self.backbone = nn.Sequential(*list(resnet.children())[:-2])
+        self.compress = nn.Conv2d(512, 128, kernel_size=1)
+        self.avgpool = nn.AdaptiveAvgPool2d((8, 8))
+
+        for param in self.backbone.parameters():
+            param.requires_grad = False
+        for param in self.backbone.parameters():
+            param.requires_grad = False
 
     def forward(self, x):
-        return self.cnn(x)
+        # x: (Batch, 3, 224, 224)
+        x = self.backbone(x)  # -> (Batch, 512, 7, 7) ※入力サイズにより可変
+        x = self.compress(x)  # -> (Batch, 128, 7, 7)
+        x = self.avgpool(x)  # -> (Batch, 128, 8, 8) 強制的に8x8にする
+        return x
 
 
 class ImageDataset(Dataset):
@@ -46,7 +53,7 @@ class ImageDataset(Dataset):
             img = img.convert("RGB")
             if self.transform:
                 img = self.transform(img)
-        return img, path
+        return img, str(path)
 
 
 def extract_features(args):
