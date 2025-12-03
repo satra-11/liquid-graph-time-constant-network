@@ -176,7 +176,7 @@ flowchart TD
 
 This repository implements a **numerically stable approximation** of the closed-form solution described in the LGTCN paper.
 
-While the original derivation (Theorem 1, Eq. 20) is theoretically rigorous, it involves a term proportional to $1/x$ and a manual derivative approximation ($D_x$). In practice, we observed that these terms lead to **vanishing gradients (saturation)** and numerical instability when the hidden state approaches zero.
+While the original derivation (Theorem 1, Eq. 20) is theoretically rigorous, it involves a term proportional to $1/x$ and a manual derivative approximation ($D_x$). In practice, I observed that these terms lead to **vanishing gradients (saturation)** and numerical instability when the hidden state approaches zero.
 
 **Evidence of Instability:**
 The chart below shows the training loss when using the raw Eq. 20 implementation. The loss drops initially but quickly flatlines (saturates), indicating that the gradients have vanished and the model has stopped learning.
