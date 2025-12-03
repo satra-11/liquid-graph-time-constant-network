@@ -1,38 +1,55 @@
 # Liquid-Graph Time-Constant Network (LGTC network)
-This repository provides a reference implementation of the Liquid-Graph Time-Constant (LGTC) networks introduced in the paper “[Liquid-Graph Time-Constant Network for Multi-Agent Systems Control](https://arxiv.org/pdf/2404.13982)” .
 
-# Getting started
+This repository provides a reference implementation of the Liquid-Graph Time-Constant (LGTC) networks introduced in the paper “[Liquid-Graph Time-Constant Network for Multi-Agent Systems Control](https://arxiv.org/pdf/2404.13982)”.
+
+## Getting started
+
 Set up the project with **either** of the following methods, depending on the tools you prefer.
+
 ### 1. pip + venv
+
 ```bash
-git clone https://github.com/satra-11/liquid-graph-time-constant-network
+git clone [https://github.com/satra-11/liquid-graph-time-constant-network](https://github.com/satra-11/liquid-graph-time-constant-network)
 cd liquid-graph-time-constant-network
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.lock
-```
-### 2. uv
+````
+
+### 2\. uv
+
 ```bash
-git clone https://github.com/satra-11/liquid-graph-time-constant-network
+git clone [https://github.com/satra-11/liquid-graph-time-constant-network](https://github.com/satra-11/liquid-graph-time-constant-network)
 cd liquid-graph-time-constant-network
 uv sync
 ```
-# Commands
-## 1. Feature Extraction (Optional but Recommended)
+
+-----
+
+## Commands
+
+### 1\. Feature Extraction (Optional but Recommended)
+
 To speed up training, you can pre-compute CNN features from the raw images.
+
 ```bash
 python3 scripts/extract_features.py
 ```
+
 This will read images from `/data/raw` and save `.npy` features to `/data/processed`.
 
-## 2. Training
+### 2\. Training
+
 Start training by executing the command below. The results will be generated in the `/driving_results` folder by default.
+
 ```bash
 python3 scripts/train_driving.py
 ```
 
-### Command-Line Arguments
+#### Command-Line Arguments
+
 You can customize the training process using the following arguments:
+
 | Argument | Type | Default | Description |
 |:---|:---|:---|:---|
 | `--seed` | int | 42 | Random seed for reproducibility. |
@@ -49,10 +66,12 @@ You can customize the training process using the following arguments:
 
 *Note: `--num-sequences`, `--corruption-rate`, and `--sensor-sequence` are defined but not currently used in the script.*
 
-## 2. Evaluation
+### 3\. Evaluation
+
 The training script automatically runs an evaluation on the test set after training is complete. The evaluation compares the models' robustness against different levels of input corruption (whiteout noise).
 
-## 3. Monitoring with MLflow
+### 4\. Monitoring with MLflow
+
 You can monitor the training progress and view the results using MLflow.
 To start the MLflow UI, run the following command in the project root directory:
 
@@ -62,31 +81,42 @@ uv run mlflow ui
 
 Then, open your browser and navigate to `http://localhost:5000`.
 You will be able to see:
-- **Experiments**: Training runs and their status.
-- **Metrics**: Real-time plots of training and validation loss.
-- **Artifacts**: Saved models (`.pth`), training curves, and comparison plots.
 
-# Tasks
-## Self-Driving
+  - **Experiments**: Training runs and their status.
+  - **Metrics**: Real-time plots of training and validation loss.
+  - **Artifacts**: Saved models (`.pth`), training curves, and comparison plots.
+
+-----
+
+## Tasks
+
+### Self-Driving
+
 This task involves predicting the vehicle's control signals from camera images. The model is trained to output the following 6 CAN bus data signals:
 
--   **`accel_pedal_info`**: Accelerator pedal depression (0 to 1)
--   **`brake_pedal_info`**: Brake pedal force or ratio
--   **`steer_info`**: Steering angle or torque
--   **`vel_info`**: Vehicle speed
--   **`yaw_info`**: Yaw rate
--   **`turn_signal_info`**: Turn signal (left/right)
+  - **`accel_pedal_info`**: Accelerator pedal depression (0 to 1)
+  - **`brake_pedal_info`**: Brake pedal force or ratio
+  - **`steer_info`**: Steering angle or torque
+  - **`vel_info`**: Vehicle speed
+  - **`yaw_info`**: Yaw rate
+  - **`turn_signal_info`**: Turn signal (left/right)
 
-# Results
+-----
+
+## Results
+
 After running the training script, the following files will be generated in the specified `--save-dir`:
 
--   `lgtcn_model.pth` / `ltcn_model.pth`: The trained weights for the LGTCN and LTCN models.
--   `training_curves.png`: A plot showing the training and validation loss curves for both models.
--   `training_info.json`: A JSON file containing the training arguments and the loss history for each epoch.
--   `comparison_plots.png`: Plots comparing the performance (MSE, MAE) of LGTCN and LTCN under various levels of input corruption.
--   `comparison_results.json`: Detailed numerical results from the comparative evaluation.
+  - `lgtcn_model.pth` / `ltcn_model.pth`: The trained weights for the LGTCN and LTCN models.
+  - `training_curves.png`: A plot showing the training and validation loss curves for both models.
+  - `training_info.json`: A JSON file containing the training arguments and the loss history for each epoch.
+  - `comparison_plots.png`: Plots comparing the performance (MSE, MAE) of LGTCN and LTCN under various levels of input corruption.
+  - `comparison_results.json`: Detailed numerical results from the comparative evaluation.
 
-# Directory Structure
+-----
+
+## Directory Structure
+
 ```yaml
 ├───pyproject.toml
 ├───README.md
@@ -104,13 +134,18 @@ After running the training script, the following files will be generated in the 
 │   └───utils/
 └───test/
 ```
-※ For HDD see [here](https://github.com/satra-11/liquid-graph-time-constant-network/blob/main/README.md#dataset).
-# Model Structures
+
+※ For HDD see [Dataset](https://www.google.com/search?q=%23dataset) section below.
+
+-----
+
+## Model Structures
 
 The `scripts/train_driving.py` script follows the workflow below to train and evaluate the LGTCN and LTCN models.
+
 ```mermaid
 flowchart TD
-  %% ===== 左：Title =====
+  %% ===== Left: LTCN =====
   subgraph L["LTCN"]
     direction TB
     LA["frames <br> (B×T×H×W×C)"]
@@ -121,21 +156,23 @@ flowchart TD
       --> LG["decoder<br>(h_{t+1}) → B×1"]
     LG --> LH["time-stacked controls: B×T×1"]
     LF --> LI["final_hidden: B×N"]
-    subgraph LIN["Inputs"]
+
+    subgraph L_IN["Inputs"]
       direction LR
       LA
     end
-    subgraph LOUT["Outputs"]
+    subgraph L_OUT["Outputs"]
       direction LR
       LH
       LI
     end
   end
 
-  %% ===== 右：Title 2 =====
+  %% ===== Right: LGTCN =====
   subgraph R["LGTCN"]
     direction TB
-    RIN["Inputs"]:::io
+
+    %% Inputs definition
     RA["frames (B×T×H×W×C)"]:::io
     RADJ["adjacency (B×T×N×N)/None"]:::io
     RH0["hidden_state (B×N×H)/None"]:::io
@@ -143,34 +180,49 @@ flowchart TD
     RA --> RB["CNN → (B·T)×128×8×8"]
     RB --> RC["reshape/permute → B×T×64×128"]
     RC --> RD["node_encoder (128→H) → B×T×64×H"]
+
     RH0 -- "x_t" --> RH["LGTCN(x_t, u_t, S_powers) → x_{t+1}"]
     RD -- "u_t" --> RH
     RADJ -. "S_powers" .-> RH
+
     RH --> RQ["control_decoder → (B×8)"]
-    subgraph RIN["Inputs"]
+    RQ --> RO1["controls (B×T×8)"]
+    RH --> RO2["final_hidden (B×N×H)"]
+
+    subgraph R_IN["Inputs"]
       direction LR
       RA
       RADJ
       RH0
     end
 
-    subgraph ROUT["Outputs"]
+    subgraph R_OUT["Outputs"]
       direction LR
-      RO1["controls (B×T×8)"]
-      RO2["final_hidden (B×N×H)"]
+      RO1
+      RO2
     end
-    RQ --> RO1
-    RH --> RO2
   end
 
-  %% スタイル
+  %% Style
   classDef io stroke:#8b5cf6,stroke-width:3px,color:#fff;
-  class LIN,LOUT,RIN,ROUT io;
+  class L_IN,L_OUT,R_IN,R_OUT,RA,RADJ,RH0 io;
 ```
 
-# Dataset
+-----
 
-This project utilizes the [Honda Research Institute Driving Dataset (HDD)](https://usa.honda-ri.com/datasets) for training and evaluation.The data can be obtained [here](https://usa.honda-ri.com/hdd).
+## Implementation Note: Numerical Stability
+
+This repository implements a **numerically stable approximation** of the closed-form solution described in the LGTCN paper (Theorem 1, Eq. 20).
+
+In the original derivation, the closed-form solution involves a term implicitly dependent on $1/x$. In practice, directly implementing this term leads to **gradient explosion and numerical instability** when the hidden state $x$ approaches zero (singularity).
+
+To address this, my implementation replaces the explicit division with a learned **Sigmoid Gating Mechanism**, inspired by the stability improvements in standard Closed-form Continuous (CfC) networks. This modification preserves the theoretical properties of Liquid Time-Constant dynamics—such as adaptivity and causality—while ensuring robust training convergence.
+
+-----
+
+## Dataset
+
+This project utilizes the [Honda Research Institute Driving Dataset (HDD)](https://usa.honda-ri.com/datasets) for training and evaluation. The data can be obtained [here](https://usa.honda-ri.com/hdd).
 
 The scripts expect the dataset to be organized in the `/data` directory with the following structure:
 
