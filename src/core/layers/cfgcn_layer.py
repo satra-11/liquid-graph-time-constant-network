@@ -1,4 +1,3 @@
-import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -29,7 +28,7 @@ class CfGCNLayer(nn.Module):
 
         fi = self.A_state(x, S_powers)
 
-        coeff = torch.sigmoid(-(self.b + f_x + fi) * t + math.pi)
+        coeff = torch.sigmoid(self.b + f_x + fi)
         sigma_u = torch.tanh(self.B_state(u, S_powers))
         x_new = (x * coeff - sigma_u) * torch.sigmoid(2 * f_sigma) + sigma_u
         return x_new
