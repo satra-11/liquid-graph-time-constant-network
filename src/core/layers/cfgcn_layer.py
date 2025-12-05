@@ -1,4 +1,3 @@
-import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -29,7 +28,17 @@ class CfGCNLayer(nn.Module):
 
         fi = self.A_state(x, S_powers)
 
-        coeff = torch.sigmoid(-(self.b + f_x + fi) * t + math.pi)
+        # 修正: シグモイド入力から math.pi を削除し、勾配消失を防止
+        decay_input = self.b + f_x + fi
+        coeff = torch.sigmoid(-t * decay_input)
+
         sigma_u = torch.tanh(self.B_state(u, S_powers))
-        x_new = (x * coeff - sigma_u) * torch.sigmoid(2 * f_sigma) + sigma_u
+
+        # 修正: ゲーティング機構を改良し、勾配の流れを改善
+        gate = torch.sigmoid(f_sigma)
+        x_new = x * coeff + (1 - coeff) * sigma_u * gate
+
+        # 出力範囲を[-1, 1]に制限
+        x_new = torch.clamp(x_new, -1.0, 1.0)
+
         return x_new
