@@ -5,7 +5,7 @@ import numpy as np
 from typing import Dict, List, Optional, Any
 import matplotlib.pyplot as plt
 from src.core.models import CfGCNController
-from src.utils import add_whiteout
+from src.utils import add_gaussian_noise
 
 
 class NetworkComparator:
@@ -33,10 +33,10 @@ class NetworkComparator:
             sensors = test_data["sensors"]
             adjacency = test_data.get("adjacency")
 
-            # 汚損フレーム生成（corruption_levelに応じて破損の強さを調整）
+            # 汚損フレーム生成（corruption_levelに応じてガウシアンノイズを追加）
             corrupted_frames = torch.stack(
                 [
-                    add_whiteout(frame, stops=corruption_level * 3.0)
+                    add_gaussian_noise(frame, std=corruption_level)
                     for frame in clean_frames
                 ]
             )
