@@ -33,9 +33,12 @@ class NetworkComparator:
             sensors = test_data["sensors"]
             adjacency = test_data.get("adjacency")
 
-            # 汚損フレーム生成
+            # 汚損フレーム生成（corruption_levelに応じて破損の強さを調整）
             corrupted_frames = torch.stack(
-                [add_whiteout(frame) for frame in clean_frames]
+                [
+                    add_whiteout(frame, stops=corruption_level * 3.0)
+                    for frame in clean_frames
+                ]
             )
 
             # LGTCNテスト
