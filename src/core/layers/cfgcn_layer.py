@@ -7,8 +7,6 @@ from .graph_filter import GraphFilter
 
 
 class CfGCNLayer(nn.Module):
-    """Discrete closed-form approximation that avoids ODE solving (eq 20)."""
-
     def __init__(self, in_dim: int, hidden_dim: int, K: int, eps: float = 0.1):
         super().__init__()
         self.K = K
@@ -25,22 +23,11 @@ class CfGCNLayer(nn.Module):
         self.b = nn.Parameter(torch.ones(1, hidden_dim) * 0.1)
 
     def forward(self, x: torch.Tensor, u: torch.Tensor, S_powers, t: float = 1.0):
-        f_x = F.relu(self.A_hat(x, S_powers) + self.bx)
+        A_hat_out = self.A_hat(x, S_powers)
+        f_x = F.relu(A_hat_out + self.bx)
         f_sigma = F.relu(self.B_hat(u, S_powers) + self.bu) + f_x
-        Dxf = (self.A_hat(x, S_powers) + self.bx > 0).to(
-            x.dtype
-        )  # Approximate D_x(A_hat_S(x)) by A_hat_S(x) itself for efficiency
 
-        # 数値安定化: xの絶対値が小さすぎる場合にクランプ
-        x_safe = torch.where(
-            x.abs() < self.eps,
-            torch.sign(x) * self.eps + self.eps,  # 符号を保持しつつ最小値を保証
-            x,
-        )
-        fi = -(Dxf * self.A_hat(x, S_powers)) + (self.A_state(x, S_powers) / x_safe)
-
-        # fi の値をクランプして数値爆発を防止
-        fi = torch.clamp(fi, min=-10.0, max=10.0)
+        fi = self.A_state(x, S_powers)
 
         coeff = torch.sigmoid(-(self.b + f_x + fi) * t + math.pi)
         sigma_u = torch.tanh(self.B_state(u, S_powers))
