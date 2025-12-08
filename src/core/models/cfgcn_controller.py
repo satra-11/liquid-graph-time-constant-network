@@ -51,6 +51,12 @@ class CfGCNController(nn.Module):
             nn.Linear(64, self.output_dim),
         )
 
+        # 学習可能な出力スケーリングパラメータ
+        # 正規化されたセンサーデータのスケール(std≈1)に合わせて設定
+        # モデル出力が約0.1程度なので、10倍程度のスケールが必要
+        self.output_scale = nn.Parameter(torch.ones(self.output_dim) * 10.0)
+        self.output_bias = nn.Parameter(torch.zeros(self.output_dim))
+
     def forward(
         self,
         frames: torch.Tensor,
@@ -125,6 +131,8 @@ class CfGCNController(nn.Module):
 
             final_layer_output = h_next_layers[-1]
             control = self.control_decoder(final_layer_output.mean(dim=1))
+            # 出力スケーリングを適用
+            control = control * self.output_scale + self.output_bias
             controls.append(control)
             current_hiddens = tuple(h_next_layers)
 

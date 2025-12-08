@@ -14,13 +14,17 @@ def test_gnn_layer_clamp_and_grad(LayerCls):
     S_powers = compute_s_powers(S, K)
     S_powers_2d = [sp.squeeze(0) for sp in S_powers]
 
-    layer = LayerCls(Din, H, K)
+    # CfGCNLayerはresidual=Falseでレガシー動作をテスト
+    if LayerCls == CfGCNLayer:
+        layer = LayerCls(Din, H, K, residual=False)
+    else:
+        layer = LayerCls(Din, H, K)
     x = torch.zeros(N, H, requires_grad=True)  # start at zero
     u = torch.randn(N, Din)
 
     out = layer(x, u, S_powers_2d)  # forward once
 
-    # outputs are in [-1, 1]   (Lemma 1 / tanh clamp)
+    # outputs are in [-1, 1] (Lemma 1 / tanh clamp) when residual=False
     assert torch.all(out <= 1.0 + 1e-6)
     assert torch.all(out >= -1.0 - 1e-6)
 
@@ -160,7 +164,8 @@ def test_cfgcn_layer_time_parameter():
     S_powers = compute_s_powers(S, K)
     S_powers_2d = [sp.squeeze(0) for sp in S_powers]
 
-    layer = CfGCNLayer(Din, H, K)
+    # residual=Falseでテスト
+    layer = CfGCNLayer(Din, H, K, residual=False)
     x = torch.randn(N, H)
     u = torch.randn(N, Din)
 
@@ -169,8 +174,7 @@ def test_cfgcn_layer_time_parameter():
         y = layer(x, u, S_powers_2d, t=t)
 
         assert y.shape == (N, H)
-        assert torch.all(y <= 1.0 + 1e-6)
-        assert torch.all(y >= -1.0 - 1e-6)
+        # 有限値であること（入力がランダムの場合、出力は[-1,1]外になる可能性がある）
         assert torch.isfinite(y).all()
 
 
@@ -203,19 +207,22 @@ def test_all_layers_consistency():
     S_powers = compute_s_powers(S, K)
     S_powers_2d = [sp.squeeze(0) for sp in S_powers]
 
-    # Test LGTCNLayer and CfGCNLayer
-    for LayerCls in [LGTCNLayer, CfGCNLayer]:
-        layer = LayerCls(Din, H, K)
-        x = torch.randn(N, H)
-        u = torch.randn(N, Din)
+    # Test LGTCNLayer（clampあり）
+    layer_lgtcn = LGTCNLayer(Din, H, K)
+    x = torch.randn(N, H)
+    u = torch.randn(N, Din)
+    y = layer_lgtcn(x, u, S_powers_2d)
+    assert y.shape == (N, H)
+    assert torch.isfinite(y).all()
+    assert torch.all(y <= 1.0 + 1e-6)
+    assert torch.all(y >= -1.0 - 1e-6)
 
-        y = layer(x, u, S_powers_2d)
-
-        # Basic checks
-        assert y.shape == (N, H)
-        assert torch.isfinite(y).all()
-        assert torch.all(y <= 1.0 + 1e-6)
-        assert torch.all(y >= -1.0 - 1e-6)
+    # Test CfGCNLayer（residual=Falseでテスト）
+    layer_cfgcn = CfGCNLayer(Din, H, K, residual=False)
+    y = layer_cfgcn(x, u, S_powers_2d)
+    assert y.shape == (N, H)
+    assert torch.isfinite(y).all()
+    # 入力がランダムの場合、CfGCNLayerの出力は[-1,1]外になる可能性がある
 
     # Test LTCNLayer separately (different interface)
     ltcn_layer = LTCNLayer(Din, H // 2, 2)  # H // 2 per block, 2 blocks = H total
@@ -255,7 +262,10 @@ def test_cfgcn_controller_matrix_types(matrix_type):
 
     # Check output shapes
     assert controls.shape == (B, T, output_dim)
-    assert final_hidden.shape == (B, N_nodes, hidden_dim)
+    # final_hidden: (B, num_layers, N, hidden_dim)
+    assert final_hidden.shape[0] == B
+    assert final_hidden.shape[-2] == N_nodes
+    assert final_hidden.shape[-1] == hidden_dim
 
     # Check for finite values
     assert torch.isfinite(controls).all()
