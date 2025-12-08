@@ -64,8 +64,12 @@ def run_training(args: argparse.Namespace):
         )
 
         # オプティマイザの作成
-        lgtcn_optimizer = optim.Adam(lgtcn_model.parameters(), lr=args.lr)
-        ltcn_optimizer = optim.Adam(ltcn_model.parameters(), lr=args.lr)
+        lgtcn_optimizer = optim.Adam(
+            lgtcn_model.parameters(), lr=args.lr, weight_decay=1e-4
+        )
+        ltcn_optimizer = optim.Adam(
+            ltcn_model.parameters(), lr=args.lr, weight_decay=1e-4
+        )
 
         start_epoch_lgtcn = 0
         start_epoch_ltcn = 0
