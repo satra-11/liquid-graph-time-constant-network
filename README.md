@@ -172,6 +172,20 @@ flowchart TD
   class L_IN,L_OUT,R_IN,R_OUT,RA,RADJ,RH0 io;
 ```
 
+### Implementation Note: Deviation from Eq. 20 for Stability
+
+This repository implements a **numerically stable approximation** of the closed-form solution described in the LGTCN paper.
+
+While the original derivation (Theorem 1, Eq. 20) is theoretically rigorous, it involves a term proportional to $1/x$ and a manual derivative approximation ($D_x$). In practice, I observed that these terms lead to **vanishing gradients (saturation)** and numerical instability when the hidden state approaches zero.
+
+**Evidence of Instability:**
+The chart below shows the training loss when using the raw Eq. 20 implementation. The loss drops initially but quickly flatlines (saturates), indicating that the gradients have vanished and the model has stopped learning.
+
+| <img width="1119" height="374" alt="Saturation Issue" src="https://github.com/user-attachments/assets/4b44ae2a-1da1-4640-9a46-68307a64f659" /> |
+|:--:|
+| *Fig: Training loss saturation observed when using the raw Eq. 20 implementation (Before fix).* |
+-----
+
 ## Results
 
 After running the training script, the following files will be generated in the specified `--save-dir`:
