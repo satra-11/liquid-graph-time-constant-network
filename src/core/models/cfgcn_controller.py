@@ -80,8 +80,12 @@ class CfGCNController(nn.Module):
 
         N = node_feats.size(2)
         if hidden_state is None:
-            hidden_state = torch.zeros(
-                B, self.num_layers, N, self.hidden_dim, device=frames.device
+            # 小さなランダム値で初期化（ゼロ初期化だとCfGCNLayerの除算が不安定になる）
+            hidden_state = (
+                torch.randn(
+                    B, self.num_layers, N, self.hidden_dim, device=frames.device
+                )
+                * 0.01
             )
 
         current_hiddens = hidden_state.unbind(dim=1)
