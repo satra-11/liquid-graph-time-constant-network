@@ -84,10 +84,6 @@ def run_training(args: argparse.Namespace):
                 "params": lgtcn_model.control_decoder.parameters(),
                 "lr": args.lr,
             },
-            {
-                "params": [lgtcn_model.output_scale, lgtcn_model.output_bias],
-                "lr": args.lr,
-            },
         ]
         lgtcn_optimizer = optim.Adam(lgtcn_param_groups, weight_decay=1e-4)
         # LGTCNにCosineAnnealingLRスケジューラを追加
