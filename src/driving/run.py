@@ -4,6 +4,7 @@ from pathlib import Path
 import numpy as np
 import torch
 import torch.optim as optim
+from torch.optim.lr_scheduler import CosineAnnealingLR
 import mlflow
 import mlflow.pytorch
 
@@ -64,9 +65,36 @@ def run_training(args: argparse.Namespace):
         )
 
         # オプティマイザの作成
-        lgtcn_optimizer = optim.Adam(
-            lgtcn_model.parameters(), lr=args.lr, weight_decay=1e-4
+        # LGTCNはパラメータグループごとに異なる学習率を設定
+        # 勾配が大きい層（feature_extractor, node_encoder）には低い学習率
+        lgtcn_param_groups = [
+            {
+                "params": lgtcn_model.feature_extractor.parameters(),
+                "lr": args.lr * 0.1,  # 低い学習率
+            },
+            {
+                "params": lgtcn_model.node_encoder.parameters(),
+                "lr": args.lr * 0.1,  # 低い学習率
+            },
+            {
+                "params": lgtcn_model.temporal_processor.parameters(),
+                "lr": args.lr,
+            },
+            {
+                "params": lgtcn_model.control_decoder.parameters(),
+                "lr": args.lr,
+            },
+            {
+                "params": [lgtcn_model.output_scale, lgtcn_model.output_bias],
+                "lr": args.lr,
+            },
+        ]
+        lgtcn_optimizer = optim.Adam(lgtcn_param_groups, weight_decay=1e-4)
+        # LGTCNにCosineAnnealingLRスケジューラを追加
+        lgtcn_scheduler = CosineAnnealingLR(
+            lgtcn_optimizer, T_max=args.epochs, eta_min=1e-6
         )
+
         ltcn_optimizer = optim.Adam(ltcn_model.parameters(), lr=args.lr)
 
         start_epoch_lgtcn = 0
@@ -94,7 +122,7 @@ def run_training(args: argparse.Namespace):
                 ltcn_optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
                 start_epoch_ltcn = checkpoint["epoch"]
 
-        # LGTCN訓練
+        # LGTCN訓練（全ての改善策を適用）
         print("Training LGTCN...")
         train_model(
             lgtcn_model,
@@ -106,6 +134,9 @@ def run_training(args: argparse.Namespace):
             num_epochs=args.epochs,
             start_epoch=start_epoch_lgtcn,
             device=device,
+            scheduler=lgtcn_scheduler,
+            use_full_sequence_loss=True,  # 全シーケンスに対してLossを計算
+            gradient_clip_norm=5.0,  # 勾配クリッピングを緩和
         )
 
         # LTCN訓練
