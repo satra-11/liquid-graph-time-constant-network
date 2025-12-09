@@ -67,9 +67,7 @@ def run_training(args: argparse.Namespace):
         lgtcn_optimizer = optim.Adam(
             lgtcn_model.parameters(), lr=args.lr, weight_decay=1e-4
         )
-        ltcn_optimizer = optim.Adam(
-            ltcn_model.parameters(), lr=args.lr, weight_decay=1e-4
-        )
+        ltcn_optimizer = optim.Adam(ltcn_model.parameters(), lr=args.lr)
 
         start_epoch_lgtcn = 0
         start_epoch_ltcn = 0
