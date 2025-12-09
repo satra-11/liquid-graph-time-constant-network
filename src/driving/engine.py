@@ -21,6 +21,9 @@ def train_model(
     num_epochs: int = 100,
     start_epoch: int = 0,
     device: torch.device = None,
+    scheduler: optim.lr_scheduler.LRScheduler = None,
+    use_full_sequence_loss: bool = False,
+    gradient_clip_norm: float = 1.0,
 ):
     """モデルを訓練"""
     device = device or torch.device("cpu")
@@ -45,16 +48,30 @@ def train_model(
 
             predictions, _ = model(frames)
 
-            loss = criterion(predictions[:, -1, :], sensors[:, -1, :])
+            # Lossを計算
+            if use_full_sequence_loss:
+                loss = criterion(predictions, sensors)
+            else:
+                loss = criterion(predictions[:, -1, :], sensors[:, -1, :])
 
             loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            torch.nn.utils.clip_grad_norm_(
+                model.parameters(), max_norm=gradient_clip_norm
+            )
             optimizer.step()
 
             epoch_train_loss += loss.item()
 
         avg_train_loss = epoch_train_loss / len(train_loader)
         mlflow.log_metric(f"{model_name} Train Loss", avg_train_loss, step=epoch)
+
+        # 学習率をログ
+        current_lr = optimizer.param_groups[0]["lr"]
+        mlflow.log_metric(f"{model_name} LR", current_lr, step=epoch)
+
+        # スケジューラのステップ
+        if scheduler is not None:
+            scheduler.step()
 
         # 検証フェーズ
         model.eval()
@@ -69,8 +86,11 @@ def train_model(
 
                 predictions, _ = model(frames)
 
-                # 予測の最後のタイムステップと比較
-                loss = criterion(predictions[:, -1, :], sensors[:, -1, :])
+                # Lossを計算
+                if use_full_sequence_loss:
+                    loss = criterion(predictions, sensors)
+                else:
+                    loss = criterion(predictions[:, -1, :], sensors[:, -1, :])
                 epoch_val_loss += loss.item()
 
         avg_val_loss = epoch_val_loss / len(val_loader)
