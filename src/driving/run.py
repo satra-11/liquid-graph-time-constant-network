@@ -122,8 +122,22 @@ def run_training(args: argparse.Namespace):
 
         # モデル保存 (MLflow)
         print("Logging models to MLflow...")
-        mlflow.pytorch.log_model(lgtcn_model, "lgtcn_model")
-        mlflow.pytorch.log_model(ltcn_model, "ltcn_model")
+
+        # サンプル入力を作成してモデルシグネチャを自動推論
+        sample_batch = next(iter(train_loader))
+        sample_input = sample_batch[0][:1].to(device)  # (1, seq_len, C, H, W)
+
+        # モデルをCPUに移動してからログ
+        lgtcn_model.to("cpu")
+        ltcn_model.to("cpu")
+        sample_input_cpu = sample_input.cpu()
+
+        mlflow.pytorch.log_model(
+            lgtcn_model, "lgtcn_model", input_example=sample_input_cpu.numpy()
+        )
+        mlflow.pytorch.log_model(
+            ltcn_model, "ltcn_model", input_example=sample_input_cpu.numpy()
+        )
 
     print(f"Training completed! Results saved to {save_dir}")
     print(
