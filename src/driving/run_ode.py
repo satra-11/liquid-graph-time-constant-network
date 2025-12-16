@@ -1,4 +1,5 @@
 import argparse
+import os
 import random
 from pathlib import Path
 import numpy as np
@@ -39,11 +40,18 @@ def run_training(args: argparse.Namespace):
         mlflow.log_params(vars(args))
 
         # データセット作成
+        processed_dir = args.processed_dir
+        if processed_dir and not os.path.exists(processed_dir):
+            print(
+                f"WARNING: Processed directory {processed_dir} not found. Falling back to raw images."
+            )
+            processed_dir = None
+
         train_loader, val_loader, test_loader, _ = setup_dataloaders(
             data_dir=args.data_dir,
             sequence_length=args.sequence_length,
             batch_size=args.batch_size,
-            processed_dir=args.processed_dir,
+            processed_dir=processed_dir,
         )
 
         # モデル作成
