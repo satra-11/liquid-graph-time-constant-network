@@ -54,6 +54,11 @@ def run_training(args: argparse.Namespace):
             processed_dir=processed_dir,
         )
 
+        if processed_dir:
+            print(f"INFO: Using pre-processed features from {processed_dir}")
+        else:
+            print("INFO: Using RAW IMAGES (CNN feature extraction will run on-the-fly)")
+
         # モデル作成
         print("Creating Neural ODE models...")
 
