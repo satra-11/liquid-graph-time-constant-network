@@ -2,8 +2,18 @@ import torch
 import pytest
 
 from src.utils.compute_s_powers import compute_s_powers
-from src.core.layers import LGTCNLayer, CfGCNLayer, LTCNLayer
-from src.core.models import CfGCNController
+from src.core.layers import (
+    LGTCNLayer,
+    CfGCNLayer,
+    LTCNLayer,
+    NeuralODELayer,
+    NeuralGraphODELayer,
+)
+from src.core.models import (
+    CfGCNController,
+    NeuralODEController,
+    NeuralGraphODEController,
+)
 
 
 @pytest.mark.parametrize("LayerCls", [LGTCNLayer, CfGCNLayer])
@@ -268,5 +278,185 @@ def test_cfgcn_controller_matrix_types(matrix_type):
     assert final_hidden.shape[-1] == hidden_dim
 
     # Check for finite values
+    assert torch.isfinite(controls).all()
+    assert torch.isfinite(final_hidden).all()
+
+
+# ============== Neural ODE Tests ==============
+
+
+def test_neural_ode_layer_basic():
+    """Test NeuralODELayer basic functionality."""
+    in_dim, hidden_dim = 8, 16
+
+    layer = NeuralODELayer(in_dim, hidden_dim, num_hidden_layers=2, solver="euler")
+
+    y = torch.randn(hidden_dim)
+    u_t = torch.randn(in_dim)
+
+    y_next = layer(y, u_t, dt=0.1, n_steps=1)
+
+    assert y_next.shape == (hidden_dim,)
+    assert torch.isfinite(y_next).all()
+
+
+def test_neural_ode_layer_batch():
+    """Test NeuralODELayer with batch input."""
+    batch_size = 4
+    in_dim, hidden_dim = 5, 10
+
+    layer = NeuralODELayer(in_dim, hidden_dim, solver="euler")
+
+    y = torch.randn(batch_size, hidden_dim)
+    u_t = torch.randn(batch_size, in_dim)
+
+    y_next = layer(y, u_t, dt=0.05, n_steps=2)
+
+    assert y_next.shape == (batch_size, hidden_dim)
+    assert torch.isfinite(y_next).all()
+
+
+def test_neural_ode_layer_no_input():
+    """Test NeuralODELayer with no external input."""
+    hidden_dim = 12
+
+    layer = NeuralODELayer(8, hidden_dim, solver="euler")
+
+    y = torch.randn(hidden_dim)
+
+    y_next = layer(y, u_t=None, dt=0.1, n_steps=1)
+
+    assert y_next.shape == (hidden_dim,)
+    assert torch.isfinite(y_next).all()
+
+
+def test_neural_ode_layer_gradient_flow():
+    """Test gradient flow through NeuralODELayer."""
+    in_dim, hidden_dim = 6, 10
+
+    layer = NeuralODELayer(in_dim, hidden_dim, solver="euler")
+
+    y = torch.randn(hidden_dim, requires_grad=True)
+    u_t = torch.randn(in_dim, requires_grad=True)
+
+    y_next = layer(y, u_t, dt=0.1, n_steps=1)
+    loss = y_next.sum()
+
+    loss.backward()
+
+    assert y.grad is not None
+    assert u_t.grad is not None
+    assert all(p.grad is not None for p in layer.parameters())
+
+
+def test_neural_graph_ode_layer_basic():
+    """Test NeuralGraphODELayer basic functionality."""
+    N, Din, H, K = 4, 8, 16, 2
+    S = torch.rand(N, N)
+    S.fill_diagonal_(0)
+    S_powers = compute_s_powers(S, K)
+    S_powers_2d = [sp.squeeze(0) for sp in S_powers]
+
+    layer = NeuralGraphODELayer(Din, H, K, solver="euler")
+    x = torch.randn(N, H)
+    u = torch.randn(N, Din)
+
+    out = layer(x, u, S_powers_2d, dt=0.05, n_steps=1)
+
+    assert out.shape == (N, H)
+    assert torch.isfinite(out).all()
+    # Check output clamping
+    assert torch.all(out <= 1.0 + 1e-6)
+    assert torch.all(out >= -1.0 - 1e-6)
+
+
+def test_neural_graph_ode_layer_batch():
+    """Test NeuralGraphODELayer with batch input."""
+    B, N, Din, H, K = 3, 5, 6, 10, 1
+    S = torch.rand(B, N, N)
+    for i in range(B):
+        S[i].fill_diagonal_(0)
+    S_powers = compute_s_powers(S, K)
+
+    layer = NeuralGraphODELayer(Din, H, K, solver="euler")
+    x = torch.randn(B, N, H)
+    u = torch.randn(B, N, Din)
+
+    out = layer(x, u, S_powers, dt=0.05, n_steps=1)
+
+    assert out.shape == (B, N, H)
+    assert torch.isfinite(out).all()
+
+
+def test_neural_graph_ode_layer_gradient_flow():
+    """Test gradient flow through NeuralGraphODELayer."""
+    N, Din, H, K = 4, 6, 8, 2
+    S = torch.eye(N)
+    S_powers = compute_s_powers(S, K)
+    S_powers_2d = [sp.squeeze(0) for sp in S_powers]
+
+    layer = NeuralGraphODELayer(Din, H, K, solver="euler")
+    x = torch.randn(N, H, requires_grad=True)
+    u = torch.randn(N, Din)
+
+    out = layer(x, u, S_powers_2d)
+
+    out.mean().backward()
+    assert x.grad is not None
+    assert all(p.grad is not None for p in layer.parameters())
+
+
+def test_neural_ode_controller():
+    """Test NeuralODEController end-to-end."""
+    B, T, C, H_frame, W_frame = 2, 3, 3, 64, 64
+    hidden_dim, output_dim = 16, 6
+
+    controller = NeuralODEController(
+        frame_height=H_frame,
+        frame_width=W_frame,
+        hidden_dim=hidden_dim,
+        output_dim=output_dim,
+        solver="euler",
+    )
+
+    frames = torch.randn(B, T, C, H_frame, W_frame)
+
+    controls, final_hidden = controller(frames)
+
+    assert controls.shape == (B, T, output_dim)
+    assert final_hidden.shape == (B, hidden_dim)
+    assert torch.isfinite(controls).all()
+    assert torch.isfinite(final_hidden).all()
+
+
+@pytest.mark.parametrize("matrix_type", ["adjacency", "laplacian", "random_walk"])
+def test_neural_graph_ode_controller_matrix_types(matrix_type):
+    """Test NeuralGraphODEController with different matrix types."""
+    B, T, C, H_frame, W_frame = 2, 3, 3, 64, 64
+    hidden_dim, K, output_dim = 16, 2, 1
+    N_nodes = 64
+
+    controller = NeuralGraphODEController(
+        frame_height=H_frame,
+        frame_width=W_frame,
+        hidden_dim=hidden_dim,
+        K=K,
+        output_dim=output_dim,
+        matrix_type=matrix_type,
+        solver="euler",
+    )
+
+    frames = torch.randn(B, T, C, H_frame, W_frame)
+    adjacency = torch.randint(0, 2, (B, T, N_nodes, N_nodes), dtype=torch.float32)
+    adjacency = adjacency + adjacency.transpose(-1, -2)
+    adjacency = adjacency.clamp(0, 1)
+
+    controls, final_hidden = controller(frames, adjacency=adjacency)
+
+    assert controls.shape == (B, T, output_dim)
+    assert final_hidden.shape[0] == B
+    assert final_hidden.shape[-2] == N_nodes
+    assert final_hidden.shape[-1] == hidden_dim
+
     assert torch.isfinite(controls).all()
     assert torch.isfinite(final_hidden).all()
