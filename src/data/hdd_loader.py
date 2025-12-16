@@ -100,6 +100,14 @@ class HDDLoader(Dataset):
                     if os.path.isdir(d)
                 }
             seq_list = sorted(sensor_candidates & cam_candidates)
+
+            if not seq_list:
+                raise RuntimeError(
+                    f"No common sequences found!\n"
+                    f"  Sensor dir: {self.sensor_dir} (Found {len(sensor_candidates)} files)\n"
+                    f"  Camera/Processed dir: {self.processed_dir or self.camera_dir} (Found {len(cam_candidates)} items)\n"
+                    f"  Please check your data paths and ensure sequence names match."
+                )
         else:
             seq_list = list(sequences)
 
