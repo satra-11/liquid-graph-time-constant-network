@@ -199,7 +199,7 @@ def main():
     parser.add_argument(
         "--data-dir",
         type=str,
-        default="/data/driving_dataset",
+        default="/data/raw",
         help="Path to driving dataset",
     )
     parser.add_argument(
