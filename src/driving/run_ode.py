@@ -204,13 +204,13 @@ def main():
     parser.add_argument(
         "--data-dir",
         type=str,
-        default="/data/raw",
+        default="./data/raw",
         help="Path to driving dataset",
     )
     parser.add_argument(
         "--processed-dir",
         type=str,
-        default="/data/processed",
+        default="./data/processed",
         help="Path to processed features",
     )
     parser.add_argument(
