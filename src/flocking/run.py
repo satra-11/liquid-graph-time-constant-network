@@ -218,7 +218,7 @@ def parse_args() -> argparse.Namespace:
 
     # Model arguments
     parser.add_argument(
-        "--hidden-dim", type=int, default=50, help="Hidden state dimension F"
+        "--hidden-dim", type=int, default=48, help="Hidden state dimension F"
     )
     parser.add_argument(
         "--K", type=int, default=2, help="Filter length for graph convolution"
@@ -232,7 +232,7 @@ def parse_args() -> argparse.Namespace:
 
     # Training arguments
     parser.add_argument(
-        "--epochs", type=int, default=120, help="Number of training epochs"
+        "--epochs", type=int, default=100, help="Number of training epochs"
     )
     parser.add_argument("--batch-size", type=int, default=8, help="Batch size")
     parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate")

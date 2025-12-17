@@ -124,7 +124,10 @@ def train_flocking_model(
                 )
                 epoch_val_loss += loss.item()
 
-        avg_val_loss = epoch_val_loss / len(val_loader)
+        if len(val_loader) > 0:
+            avg_val_loss = epoch_val_loss / len(val_loader)
+        else:
+            avg_val_loss = 0.0
         mlflow.log_metric(f"{model_name} Val Loss", avg_val_loss, step=epoch)
 
         # Log learning rate

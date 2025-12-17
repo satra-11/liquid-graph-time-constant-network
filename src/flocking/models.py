@@ -152,7 +152,7 @@ class FlockingLTCN(nn.Module):
     def __init__(
         self,
         input_dim: int = 10,
-        hidden_dim: int = 50,
+        hidden_dim: int = 48,  # Must be divisible by num_blocks
         output_dim: int = 2,
         fc_dim: int = 128,
         num_blocks: int = 4,
@@ -161,31 +161,36 @@ class FlockingLTCN(nn.Module):
 
         Args:
             input_dim: Input feature dimension
-            hidden_dim: Hidden state dimension
+            hidden_dim: Hidden state dimension (must be divisible by num_blocks)
             output_dim: Output dimension
             fc_dim: Fully connected layer dimension
             num_blocks: Number of blocks in LTCNLayer
         """
         super().__init__()
         self.input_dim = input_dim
-        self.hidden_dim = hidden_dim
         self.output_dim = output_dim
+        self.num_blocks = num_blocks
 
-        # Input encoder
+        # Ensure hidden_dim is divisible by num_blocks
+        k_per_block = hidden_dim // num_blocks
+        # LTCNLayer's N = num_blocks * k
+        self.ltcn_hidden_dim = num_blocks * k_per_block
+        self.hidden_dim = self.ltcn_hidden_dim
+
+        # Input encoder: outputs ltcn_hidden_dim
         self.input_encoder = nn.Sequential(
             nn.Linear(input_dim, fc_dim),
             nn.ReLU(),
-            nn.Linear(fc_dim, hidden_dim),
+            nn.Linear(fc_dim, self.ltcn_hidden_dim),
             nn.ReLU(),
         )
 
-        # LTCN layer
-        k_per_block = hidden_dim // num_blocks
-        self.ltcn_layer = LTCNLayer(hidden_dim, k_per_block, num_blocks)
+        # LTCN layer: in_dim matches encoder output
+        self.ltcn_layer = LTCNLayer(self.ltcn_hidden_dim, k_per_block, num_blocks)
 
         # Output decoder
         self.output_decoder = nn.Sequential(
-            nn.Linear(hidden_dim, fc_dim),
+            nn.Linear(self.ltcn_hidden_dim, fc_dim),
             nn.ReLU(),
             nn.Linear(fc_dim, fc_dim),
             nn.ReLU(),
@@ -219,7 +224,7 @@ class FlockingLTCN(nn.Module):
 
         # Process each agent with shared LTCN
         # Flatten batch and agents: (B, N, ...) -> (B*N, ...)
-        current_hidden = hidden_state.view(B * N, self.hidden_dim)
+        current_hidden = hidden_state.reshape(B * N, self.hidden_dim)
 
         actions = []
 
@@ -228,7 +233,7 @@ class FlockingLTCN(nn.Module):
             obs_flat = obs_t.reshape(B * N, self.input_dim)
 
             # Encode input
-            x_t = self.input_encoder(obs_flat)  # (B*N, hidden_dim)
+            x_t = self.input_encoder(obs_flat)  # (B*N, ltcn_hidden_dim)
 
             # LTCN step
             next_hidden = self.ltcn_layer(current_hidden, x_t, dt=0.05, n_steps=1)
@@ -241,6 +246,6 @@ class FlockingLTCN(nn.Module):
             current_hidden = next_hidden
 
         actions = torch.stack(actions, dim=1)  # (B, T, N, output_dim)
-        final_hidden = current_hidden.view(B, N, self.hidden_dim)
+        final_hidden = current_hidden.reshape(B, N, self.hidden_dim)
 
         return actions, final_hidden
