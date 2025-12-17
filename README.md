@@ -101,6 +101,41 @@ This task involves predicting the vehicle's control signals from camera images. 
   - **`yaw_info`**: Yaw rate
   - **`turn_signal_info`**: Turn signal (left/right)
 
+### Flocking (Multi-Agent Control)
+
+This task implements **Leader-Follower Flocking** simulation for multi-agent systems, based on the LGTCN paper's experimental conditions ([arXiv:2404.13982](https://arxiv.org/abs/2404.13982)).
+
+The model learns to imitate an expert controller (Olfati-Saber式) that coordinates multiple agents to follow a leader toward a target while avoiding collisions.
+
+  - **Input**: Position `r(t) ∈ R^(N×2)` and velocity `v(t) ∈ R^(N×2)` for N agents
+  - **Output**: Acceleration `u(t) ∈ R^(N×2)` for each agent
+  - **Training**: Imitation learning with DAGGER algorithm for distribution shift correction
+
+#### Running the Flocking Task
+
+```bash
+python -m src.flocking.run
+```
+
+#### Command-Line Arguments
+
+| Argument | Type | Default | Description |
+|:---|:---|:---|:---|
+| `--num-trajectories` | int | 60 | Number of training trajectories. |
+| `--trajectory-length` | float | 2.5 | Trajectory duration in seconds. |
+| `--dt` | float | 0.05 | Sampling time in seconds. |
+| `--agent-counts` | int[] | [4, 6, 10, 12, 15] | Possible agent counts (randomly selected). |
+| `--comm-range` | float | 4.0 | Communication range R in meters. |
+| `--collision-range` | float | 1.0 | Collision avoidance range R_CA in meters. |
+| `--max-accel` | float | 5.0 | Maximum acceleration in m/s². |
+| `--hidden-dim` | int | 48 | Hidden state dimension F. |
+| `--K` | int | 2 | Filter length for graph convolution. |
+| `--epochs` | int | 100 | Number of training epochs. |
+| `--batch-size` | int | 8 | Batch size. |
+| `--lr` | float | 1e-3 | Learning rate. |
+| `--dagger-interval` | int | 20 | Run DAGGER data collection every N epochs. |
+| `--save-dir` | str | `flocking_results` | Directory to save results. |
+
 -----
 
 ## Model Structures
@@ -171,6 +206,71 @@ flowchart TD
   classDef io stroke:#8b5cf6,stroke-width:3px,color:#fff;
   class L_IN,L_OUT,R_IN,R_OUT,RA,RADJ,RH0 io;
 ```
+
+### Flocking Models
+
+The flocking models use a simpler architecture since the input is already structured as agent observations (position, velocity, etc.) rather than raw images.
+
+```mermaid
+flowchart TD
+  %% ===== Left: FlockingLTCN =====
+  subgraph FL["FlockingLTCN"]
+    direction TB
+    FLA["observations<br>(B×T×N×10)"]
+      --> FLB["FC(128) → ReLU<br>→ FC(H) → ReLU"]
+      --> FLC["LTCNLayer<br>(h_t, x_t) → h_{t+1}"]
+      --> FLD["FC(128) → ReLU<br>→ FC(128) → ReLU<br>→ FC(2)"]
+    FLD --> FLE["actions (B×T×N×2)"]
+    FLC --> FLF["final_hidden (B×N×H)"]
+
+    subgraph FL_IN["Inputs"]
+      direction LR
+      FLA
+    end
+    subgraph FL_OUT["Outputs"]
+      direction LR
+      FLE
+      FLF
+    end
+  end
+
+  %% ===== Right: FlockingLGTCN =====
+  subgraph FR["FlockingLGTCN"]
+    direction TB
+    FRA["observations (B×T×N×10)"]:::io
+    FRADJ["adjacency (B×T×N×N)"]:::io
+    FRH0["hidden_state (B×N×H)/None"]:::io
+
+    FRA --> FRB["FC(128) → ReLU<br>→ FC(H) → ReLU"]
+    FRB --> FRC["CfGCNLayer<br>(h_t, u_t, S_powers) → h_{t+1}"]
+    FRADJ -. "Laplacian → S_powers" .-> FRC
+    FRH0 -. "h_t" .-> FRC
+
+    FRC --> FRD["FC(128) → ReLU<br>→ FC(128) → ReLU<br>→ FC(2)"]
+    FRD --> FRO1["actions (B×T×N×2)"]
+    FRC --> FRO2["final_hidden (B×N×H)"]
+
+    subgraph FR_IN["Inputs"]
+      direction LR
+      FRA
+      FRADJ
+      FRH0
+    end
+    subgraph FR_OUT["Outputs"]
+      direction LR
+      FRO1
+      FRO2
+    end
+  end
+
+  %% Style
+  classDef io stroke:#8b5cf6,stroke-width:3px,color:#fff;
+  class FL_IN,FL_OUT,FR_IN,FR_OUT,FRA,FRADJ,FRH0 io;
+```
+
+**Key Differences:**
+- **FlockingLGTCN**: Uses `CfGCNLayer` with normalized Laplacian for graph-based message passing between agents. Agents share information within communication range.
+- **FlockingLTCN**: Each agent is processed independently with shared weights. No inter-agent communication.
 
 ### Implementation Note: Deviation from Eq. 20 for Stability
 
