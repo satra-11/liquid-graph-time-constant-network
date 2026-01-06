@@ -24,6 +24,29 @@ cd liquid-graph-time-constant-network
 uv sync
 ```
 
+### 3\. Using Makefile
+
+This project includes a Makefile to simplify common tasks. Run `make help` to see all available commands:
+
+```bash
+make help
+```
+
+| Command | Description |
+|:---|:---|
+| `make install` | Install dependencies (production only) |
+| `make install-dev` | Install all dependencies including dev tools |
+| `make sync` | Sync dependencies using uv |
+| `make lint` | Run linting (ruff, mypy) |
+| `make test` | Run tests with pytest |
+| `make extract` | Extract features from raw images |
+| `make train` | Train the driving models |
+| `make evaluate` | Evaluate trained models |
+| `make flocking` | Run the flocking task |
+| `make mlflow` | Start MLflow UI |
+| `make clean` | Remove cache files |
+| `make all` | Run full pipeline (extract → train) |
+
 -----
 
 ## Commands
