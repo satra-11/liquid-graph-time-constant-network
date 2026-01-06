@@ -34,7 +34,7 @@ class NoiseRobustnessEvaluator:
         ltcn_model: nn.Module,
         node_model: nn.Module,
         test_data: dict[str, torch.Tensor],
-        noise_levels: list[float] = [0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3],
+        noise_levels: list[float] = [0.0, 0.1, 0.2, 0.3],
     ) -> dict[str, Any]:
         """LTCNとNeural ODEをノイズ耐性で比較評価
 
