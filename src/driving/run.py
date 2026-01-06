@@ -96,6 +96,10 @@ def run_training(args: argparse.Namespace):
         )
 
         ltcn_optimizer = optim.Adam(ltcn_model.parameters(), lr=args.lr)
+        # LTCNにもCosineAnnealingLRスケジューラを追加
+        ltcn_scheduler = CosineAnnealingLR(
+            ltcn_optimizer, T_max=args.epochs, eta_min=1e-6
+        )
 
         start_epoch_lgtcn = 0
         start_epoch_ltcn = 0
@@ -151,6 +155,7 @@ def run_training(args: argparse.Namespace):
             num_epochs=args.epochs,
             start_epoch=start_epoch_ltcn,
             device=device,
+            scheduler=ltcn_scheduler,
         )
 
         # モデル保存 (MLflow)
