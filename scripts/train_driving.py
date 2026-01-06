@@ -12,6 +12,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Train driving controllers with LGTCN/LTCN"
     )
+    parser.add_argument(
+        "--model",
+        type=str,
+        required=True,
+        choices=["lgtcn", "ltcn", "node", "ngode"],
+        help="Model to train: lgtcn, ltcn, node, or ngode",
+    )
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--num-sequences", type=int, default=800)
     parser.add_argument("--sequence-length", type=int, default=20)

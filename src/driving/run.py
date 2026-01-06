@@ -9,9 +9,127 @@ import mlflow
 import mlflow.pytorch
 
 
-from src.core.models import CfGCNController, LTCNController
+from src.core.models import (
+    CfGCNController,
+    LTCNController,
+    NeuralODEController,
+    NeuralGraphODEController,
+)
 from src.driving.data import setup_dataloaders
 from src.driving.engine import train_model
+
+
+def create_model(model_type: str, args: argparse.Namespace):
+    """指定されたタイプのモデルを作成"""
+    if model_type == "lgtcn":
+        return CfGCNController(
+            frame_height=64,
+            frame_width=64,
+            hidden_dim=args.hidden_dim,
+            output_dim=6,
+            K=args.K,
+            num_layers=args.num_layers_cfgcn,
+        )
+    elif model_type == "ltcn":
+        return LTCNController(
+            frame_height=64,
+            frame_width=64,
+            output_dim=6,
+            hidden_dim=args.hidden_dim,
+            num_layers=args.num_layers_ltcn,
+        )
+    elif model_type == "node":
+        return NeuralODEController(
+            frame_height=64,
+            frame_width=64,
+            hidden_dim=args.hidden_dim,
+            output_dim=6,
+        )
+    elif model_type == "ngode":
+        return NeuralGraphODEController(
+            frame_height=64,
+            frame_width=64,
+            hidden_dim=args.hidden_dim,
+            output_dim=6,
+            K=args.K,
+            num_layers=args.num_layers_cfgcn,
+        )
+    else:
+        raise ValueError(f"Unknown model type: {model_type}")
+
+
+def create_optimizer_and_scheduler(model, model_type: str, args: argparse.Namespace):
+    """モデルタイプに応じたオプティマイザとスケジューラを作成"""
+    if model_type == "lgtcn":
+        # LGTCNはパラメータグループごとに異なる学習率を設定
+        param_groups = [
+            {
+                "params": model.feature_extractor.parameters(),
+                "lr": args.lr * 0.1,
+            },
+            {
+                "params": model.node_encoder.parameters(),
+                "lr": args.lr * 0.1,
+            },
+            {
+                "params": model.temporal_processor.parameters(),
+                "lr": args.lr,
+            },
+            {
+                "params": model.control_decoder.parameters(),
+                "lr": args.lr,
+            },
+            {
+                "params": [model.output_scale, model.output_bias],
+                "lr": args.lr,
+            },
+        ]
+        optimizer = optim.Adam(param_groups, weight_decay=1e-4)
+    elif model_type == "ngode":
+        # NGODEもLGTCN同様のパラメータグループを設定
+        param_groups = [
+            {
+                "params": model.feature_extractor.parameters(),
+                "lr": args.lr * 0.1,
+            },
+            {
+                "params": model.node_encoder.parameters(),
+                "lr": args.lr * 0.1,
+            },
+            {
+                "params": model.temporal_processor.parameters(),
+                "lr": args.lr,
+            },
+            {
+                "params": model.control_decoder.parameters(),
+                "lr": args.lr,
+            },
+            {
+                "params": [model.output_scale, model.output_bias],
+                "lr": args.lr,
+            },
+        ]
+        optimizer = optim.Adam(param_groups, weight_decay=1e-4)
+    else:
+        # LTCN, NODE は標準の設定
+        optimizer = optim.Adam(model.parameters(), lr=args.lr)
+
+    scheduler = CosineAnnealingLR(optimizer, T_max=args.epochs, eta_min=1e-6)
+    return optimizer, scheduler
+
+
+def get_training_config(model_type: str) -> dict:
+    """モデルタイプに応じた訓練設定を取得"""
+    if model_type in ["lgtcn", "ngode"]:
+        return {
+            "use_full_sequence_loss": True,
+            "gradient_clip_norm": 5.0,
+        }
+    else:
+        return {
+            "use_full_sequence_loss": False,
+            "gradient_clip_norm": 1.0,
+        }
 
 
 def run_training(args: argparse.Namespace):
@@ -33,6 +151,9 @@ def run_training(args: argparse.Namespace):
     save_dir = Path(args.save_dir)
     save_dir.mkdir(parents=True, exist_ok=True)
 
+    model_type = args.model
+    model_name = model_type.upper()
+
     with mlflow.start_run() as run:
         print(f"MLflow Run ID: {run.info.run_id}")
         mlflow.log_params(vars(args))
@@ -46,135 +167,58 @@ def run_training(args: argparse.Namespace):
         )
 
         # モデル作成
-        print("Creating models...")
-        lgtcn_model = CfGCNController(
-            frame_height=64,
-            frame_width=64,
-            hidden_dim=args.hidden_dim,
-            output_dim=6,
-            K=args.K,
-            num_layers=args.num_layers_cfgcn,
-        )
+        print(f"Creating {model_name} model...")
+        model = create_model(model_type, args)
 
-        ltcn_model = LTCNController(
-            frame_height=64,
-            frame_width=64,
-            output_dim=6,
-            hidden_dim=args.hidden_dim,
-            num_layers=args.num_layers_ltcn,
-        )
+        # オプティマイザとスケジューラを作成
+        optimizer, scheduler = create_optimizer_and_scheduler(model, model_type, args)
 
-        # オプティマイザの作成
-        # LGTCNはパラメータグループごとに異なる学習率を設定
-        # 勾配が大きい層（feature_extractor, node_encoder）には低い学習率
-        lgtcn_param_groups = [
-            {
-                "params": lgtcn_model.feature_extractor.parameters(),
-                "lr": args.lr * 0.1,  # 低い学習率
-            },
-            {
-                "params": lgtcn_model.node_encoder.parameters(),
-                "lr": args.lr * 0.1,  # 低い学習率
-            },
-            {
-                "params": lgtcn_model.temporal_processor.parameters(),
-                "lr": args.lr,
-            },
-            {
-                "params": lgtcn_model.control_decoder.parameters(),
-                "lr": args.lr,
-            },
-            {
-                "params": [lgtcn_model.output_scale, lgtcn_model.output_bias],
-                "lr": args.lr,
-            },
-        ]
-        lgtcn_optimizer = optim.Adam(lgtcn_param_groups, weight_decay=1e-4)
-        # LGTCNにCosineAnnealingLRスケジューラを追加
-        lgtcn_scheduler = CosineAnnealingLR(
-            lgtcn_optimizer, T_max=args.epochs, eta_min=1e-6
-        )
-
-        ltcn_optimizer = optim.Adam(ltcn_model.parameters(), lr=args.lr)
-        # LTCNにもCosineAnnealingLRスケジューラを追加
-        ltcn_scheduler = CosineAnnealingLR(
-            ltcn_optimizer, T_max=args.epochs, eta_min=1e-6
-        )
-
-        start_epoch_lgtcn = 0
-        start_epoch_ltcn = 0
+        start_epoch = 0
 
         # チェックポイントからの再開
         if args.resume_from_checkpoint:
-            lgtcn_checkpoint_path = (
-                Path(args.resume_from_checkpoint) / "LGTCN_checkpoint.pth"
+            checkpoint_path = (
+                Path(args.resume_from_checkpoint) / f"{model_name}_checkpoint.pth"
             )
-            if lgtcn_checkpoint_path.exists():
-                print(f"Resuming LGTCN training from {lgtcn_checkpoint_path}")
-                checkpoint = torch.load(lgtcn_checkpoint_path)
-                lgtcn_model.load_state_dict(checkpoint["model_state_dict"])
-                lgtcn_optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
-                start_epoch_lgtcn = checkpoint["epoch"]
+            if checkpoint_path.exists():
+                print(f"Resuming {model_name} training from {checkpoint_path}")
+                checkpoint = torch.load(checkpoint_path)
+                model.load_state_dict(checkpoint["model_state_dict"])
+                optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+                start_epoch = checkpoint["epoch"]
 
-            ltcn_checkpoint_path = (
-                Path(args.resume_from_checkpoint) / "LTCN_checkpoint.pth"
-            )
-            if ltcn_checkpoint_path.exists():
-                print(f"Resuming LTCN training from {ltcn_checkpoint_path}")
-                checkpoint = torch.load(ltcn_checkpoint_path)
-                ltcn_model.load_state_dict(checkpoint["model_state_dict"])
-                ltcn_optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
-                start_epoch_ltcn = checkpoint["epoch"]
+        # 訓練設定を取得
+        training_config = get_training_config(model_type)
 
-        # LGTCN訓練（全ての改善策を適用）
-        print("Training LGTCN...")
+        # モデル訓練
+        print(f"Training {model_name}...")
         train_model(
-            lgtcn_model,
-            "LGTCN",
+            model,
+            model_name,
             train_loader,
             val_loader,
-            optimizer=lgtcn_optimizer,
+            optimizer=optimizer,
             save_dir=save_dir,
             num_epochs=args.epochs,
-            start_epoch=start_epoch_lgtcn,
+            start_epoch=start_epoch,
             device=device,
-            scheduler=lgtcn_scheduler,
-            use_full_sequence_loss=True,  # 全シーケンスに対してLossを計算
-            gradient_clip_norm=5.0,  # 勾配クリッピングを緩和
-        )
-
-        # LTCN訓練
-        print("Training LTCN...")
-        train_model(
-            ltcn_model,
-            "LTCN",
-            train_loader,
-            val_loader,
-            optimizer=ltcn_optimizer,
-            save_dir=save_dir,
-            num_epochs=args.epochs,
-            start_epoch=start_epoch_ltcn,
-            device=device,
-            scheduler=ltcn_scheduler,
+            scheduler=scheduler,
+            **training_config,
         )
 
         # モデル保存 (MLflow)
-        print("Logging models to MLflow...")
+        print("Logging model to MLflow...")
 
         # サンプル入力を作成してモデルシグネチャを自動推論
         sample_batch = next(iter(train_loader))
         sample_input = sample_batch[0][:1].to(device)  # (1, seq_len, C, H, W)
 
         # モデルをCPUに移動してからログ
-        lgtcn_model.to("cpu")
-        ltcn_model.to("cpu")
+        model.to("cpu")
         sample_input_cpu = sample_input.cpu()
 
         mlflow.pytorch.log_model(
-            lgtcn_model, "lgtcn_model", input_example=sample_input_cpu.numpy()
-        )
-        mlflow.pytorch.log_model(
-            ltcn_model, "ltcn_model", input_example=sample_input_cpu.numpy()
+            model, f"{model_type}_model", input_example=sample_input_cpu.numpy()
         )
 
     print(f"Training completed! Results saved to {save_dir}")

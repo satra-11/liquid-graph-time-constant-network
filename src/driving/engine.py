@@ -7,12 +7,20 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 import mlflow
 
-from src.core.models import CfGCNController, LTCNController
+from src.core.models import (
+    CfGCNController,
+    LTCNController,
+    NeuralODEController,
+    NeuralGraphODEController,
+)
 from src.tasks import NetworkComparator
 
 
 def train_model(
-    model: LTCNController | CfGCNController,
+    model: LTCNController
+    | CfGCNController
+    | NeuralODEController
+    | NeuralGraphODEController,
     model_name: str,
     train_loader: DataLoader,
     val_loader: DataLoader,
