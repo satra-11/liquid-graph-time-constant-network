@@ -1,17 +1,16 @@
 #!/usr/bin/env python
 """
-映像データによる自律走行タスクでのLGTCN/LTCN評価スクリプト
+映像データによる自律走行タスクでの評価スクリプト
+コマンドライン引数でモデルを指定して一つずつ評価する
 """
 
 import time
 import argparse
-from src.driving.evaluate import run_evaluation
+from src.driving.evaluate import run_single_model_evaluation
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Evaluate driving controllers with LGTCN/LTCN"
-    )
+    parser = argparse.ArgumentParser(description="Evaluate a driving controller")
     # Data params
     parser.add_argument(
         "--data-dir", type=str, required=True, help="Path to data directory"
@@ -29,18 +28,19 @@ if __name__ == "__main__":
         help="Directory to save results",
     )
 
-    # Model paths
+    # Model selection
     parser.add_argument(
-        "--lgtcn-model-path",
+        "--model",
         type=str,
         required=True,
-        help="Path to LGTCN model checkpoint",
+        choices=["lgtcn", "ltcn", "node", "ngode"],
+        help="Model type to evaluate (lgtcn, ltcn, node, ngode)",
     )
     parser.add_argument(
-        "--ltcn-model-path",
+        "--model-path",
         type=str,
         required=True,
-        help="Path to LTCN model checkpoint",
+        help="Path to model checkpoint",
     )
 
     # Model params (defaults matched to train_driving.py)
@@ -58,7 +58,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     start_time = time.time()
-    run_evaluation(args)
+    run_single_model_evaluation(args)
     end_time = time.time()
     elapsed_time = end_time - start_time
     print(

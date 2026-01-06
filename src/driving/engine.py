@@ -1,5 +1,6 @@
 import time
 from pathlib import Path
+from typing import Any
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -126,6 +127,78 @@ def train_model(
     print(
         f"Training for {model_name} finished in {time.strftime('%H:%M:%S', time.gmtime(elapsed_time))}."
     )
+
+
+def evaluate_model(
+    model: LTCNController
+    | CfGCNController
+    | NeuralODEController
+    | NeuralGraphODEController,
+    model_name: str,
+    test_data: dict,
+    device: torch.device,
+    corruption_levels: list[float] | None = None,
+):
+    """単一モデルを評価"""
+    if corruption_levels is None:
+        corruption_levels = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5]
+
+    model.eval()
+    model.to(device)
+
+    clean_frames = test_data["clean_frames"].to(device)
+    sensors = test_data["sensors"].to(device)
+
+    results: dict[str, Any] = {
+        "model_name": model_name,
+        "corruption_levels": corruption_levels,
+        "results_by_corruption": {},
+        "metrics": {},
+    }
+
+    mse_criterion = nn.MSELoss()
+    mae_criterion = nn.L1Loss()
+
+    total_mse = 0.0
+    total_mae = 0.0
+
+    with torch.no_grad():
+        for corruption_level in corruption_levels:
+            # ノイズを追加
+            if corruption_level > 0:
+                noise = torch.randn_like(clean_frames) * corruption_level
+                corrupted_frames = clean_frames + noise
+                corrupted_frames = torch.clamp(corrupted_frames, 0, 1)
+            else:
+                corrupted_frames = clean_frames
+
+            # 予測
+            predictions, _ = model(corrupted_frames)
+
+            # メトリクス計算
+            mse = mse_criterion(predictions, sensors).item()
+            mae = mae_criterion(predictions, sensors).item()
+
+            results["results_by_corruption"][str(corruption_level)] = {
+                "mse": mse,
+                "mae": mae,
+            }
+
+            total_mse += mse
+            total_mae += mae
+
+            print(f"  Corruption {corruption_level:.1f}: MSE={mse:.6f}, MAE={mae:.6f}")
+
+    # 平均メトリクスを記録
+    num_levels = len(corruption_levels)
+    results["metrics"]["avg_mse"] = total_mse / num_levels
+    results["metrics"]["avg_mae"] = total_mae / num_levels
+
+    print(
+        f"\n{model_name.upper()} Average: MSE={results['metrics']['avg_mse']:.6f}, MAE={results['metrics']['avg_mae']:.6f}"
+    )
+
+    return results
 
 
 def evaluate_networks(

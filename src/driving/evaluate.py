@@ -7,13 +7,18 @@ import mlflow
 import numpy as np
 import torch
 
-from src.core.models import CfGCNController, LTCNController
+from src.core.models import (
+    CfGCNController,
+    LTCNController,
+    NeuralODEController,
+    NeuralGraphODEController,
+)
 from src.driving.data import setup_dataloaders
-from src.driving.engine import evaluate_networks
-from src.tasks import NetworkComparator
+from src.driving.engine import evaluate_model
 
 
-def run_evaluation(args: argparse.Namespace):
+def run_single_model_evaluation(args: argparse.Namespace):
+    """単一モデルを評価する関数"""
     # デバイス設定
     if args.device == "auto":
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -45,64 +50,59 @@ def run_evaluation(args: argparse.Namespace):
         )
 
         # モデル作成
-        print("Creating models...")
-        lgtcn_model = CfGCNController(
-            frame_height=64,
-            frame_width=64,
-            hidden_dim=args.hidden_dim,
-            output_dim=6,
-            K=args.K,
-            num_layers=args.num_layers_cfgcn,
-        )
-
-        ltcn_model = LTCNController(
-            frame_height=64,
-            frame_width=64,
-            output_dim=6,
-            hidden_dim=args.hidden_dim,
-            num_layers=args.num_layers_ltcn,
-        )
+        print(f"Creating {args.model.upper()} model...")
+        if args.model == "lgtcn":
+            model = CfGCNController(
+                frame_height=64,
+                frame_width=64,
+                hidden_dim=args.hidden_dim,
+                output_dim=6,
+                K=args.K,
+                num_layers=args.num_layers_cfgcn,
+            )
+        elif args.model == "ltcn":
+            model = LTCNController(
+                frame_height=64,
+                frame_width=64,
+                output_dim=6,
+                hidden_dim=args.hidden_dim,
+                num_layers=args.num_layers_ltcn,
+            )
+        elif args.model == "node":
+            model = NeuralODEController(
+                frame_height=64,
+                frame_width=64,
+                hidden_dim=args.hidden_dim,
+                output_dim=6,
+            )
+        elif args.model == "ngode":
+            model = NeuralGraphODEController(
+                frame_height=64,
+                frame_width=64,
+                hidden_dim=args.hidden_dim,
+                output_dim=6,
+                K=args.K,
+                num_layers=args.num_layers_cfgcn,
+            )
+        else:
+            raise ValueError(f"Unknown model type: {args.model}")
 
         # モデルのロード
-        print(f"Loading LGTCN model from {args.lgtcn_model_path}")
-        lgtcn_checkpoint = torch.load(args.lgtcn_model_path, map_location=device)
-        # Checkpoint could be the full checkpoint dict or just state_dict
-        # Based on run.py, it saves a dict with "model_state_dict"
-        # But user might provide a direct model path if saved differently.
-        # run.py saves with mlflow.pytorch.log_model which saves the whole model object usually,
-        # but also saves checkpoints manually with torch.save.
-        # The user said "lgtcn/driving_results/lgtcn_model.pth".
-        # Let's assume it's a state dict or we try to load it.
-        # If the user provides the path to the file saved by `torch.save` in `run.py`, it has `model_state_dict`.
-        # If it's from mlflow, it might be different.
-        # Let's assume it's the checkpoint format from `run.py` first.
-
+        print(f"Loading {args.model.upper()} model from {args.model_path}")
+        checkpoint = torch.load(args.model_path, map_location=device)
         try:
-            if "model_state_dict" in lgtcn_checkpoint:
-                lgtcn_model.load_state_dict(lgtcn_checkpoint["model_state_dict"])
+            if "model_state_dict" in checkpoint:
+                model.load_state_dict(checkpoint["model_state_dict"])
             else:
-                lgtcn_model.load_state_dict(lgtcn_checkpoint)
+                model.load_state_dict(checkpoint)
         except Exception as e:
-            print(f"Error loading LGTCN model: {e}")
+            print(f"Error loading model: {e}")
             # Fallback for direct model load if it was saved as full model
-            lgtcn_model = torch.load(args.lgtcn_model_path, map_location=device)
-
-        print(f"Loading LTCN model from {args.ltcn_model_path}")
-        ltcn_checkpoint = torch.load(args.ltcn_model_path, map_location=device)
-        try:
-            if "model_state_dict" in ltcn_checkpoint:
-                ltcn_model.load_state_dict(ltcn_checkpoint["model_state_dict"])
-            else:
-                ltcn_model.load_state_dict(ltcn_checkpoint)
-        except Exception as e:
-            print(f"Error loading LTCN model: {e}")
-            ltcn_model = torch.load(args.ltcn_model_path, map_location=device)
+            model = torch.load(args.model_path, map_location=device)
 
         # 評価のためにテストデータを1バッチ取得
-        lgtcn_model.eval()
-        ltcn_model.eval()
-        lgtcn_model.to(device)
-        ltcn_model.to(device)
+        model.eval()
+        model.to(device)
 
         with torch.no_grad():
             try:
@@ -116,37 +116,30 @@ def run_evaluation(args: argparse.Namespace):
         test_frames = test_frames.to(device)
         test_sensors = test_sensors.to(device)
 
-        # evaluate_networks に渡す dict
+        # evaluate_single_model に渡す dict
         test_data = {
             "clean_frames": test_frames,
             "sensors": test_sensors,
         }
 
         # 評価の実行
-        results = evaluate_networks(lgtcn_model, ltcn_model, test_data, device)
+        results = evaluate_model(model, args.model, test_data, device)
 
         # 結果を保存
-        comparator = NetworkComparator(device)
-        results_path = save_dir / "comparison_results.json"
-        plots_path = save_dir / "comparison_plots.png"
+        results_path = save_dir / f"{args.model}_evaluation_results.json"
 
         with open(results_path, "w") as f:
             json.dump(results, f, indent=2)
 
-        comparator.visualize_comparison(results, plots_path)
-
         # 評価結果をMLflowに記録
         print("Logging artifacts to MLflow...")
-        mlflow.log_artifact(str(plots_path))
         mlflow.log_artifact(str(results_path))
 
-        # 最終的なサマリーメトリクスを記録
-        summary = results.get("comparison", {}).get("winner_by_metric", {})
-        for metric, values in summary.items():
-            mlflow.log_metric(f"LGTCN_avg_{metric}", values.get("lgtcn_avg", 0))
-            mlflow.log_metric(f"LTCN_avg_{metric}", values.get("ltcn_avg", 0))
+        # メトリクスを記録
+        for metric_name, metric_value in results.get("metrics", {}).items():
+            mlflow.log_metric(f"{args.model}_{metric_name}", metric_value)
 
-    print(f"Evaluation completed! Results saved to {save_dir}")
+    print(f"Evaluation completed! Results saved to {results_path}")
     print(
         f"To view results, run 'mlflow ui' in the directory '{Path.cwd()}' and open http://localhost:5000"
     )
