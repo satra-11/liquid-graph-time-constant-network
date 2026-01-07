@@ -295,6 +295,25 @@ flowchart TD
 - **FlockingLGTCN**: Uses `CfGCNLayer` with normalized Laplacian for graph-based message passing between agents. Agents share information within communication range.
 - **FlockingLTCN**: Each agent is processed independently with shared weights. No inter-agent communication.
 
+### Numerical Integration
+
+All models (LTCN, LGTCN, Neural ODE) use **Euler integration** for solving ODEs:
+
+```python
+# Euler method: y_{n+1} = y_n + dt * f(y_n)
+for _ in range(n_steps):
+    dydt = ode_func(y)
+    y = y + dt * dydt
+```
+
+This unified integration scheme ensures **fair comparison** across models. Using different solvers (e.g., adaptive Runge-Kutta for Neural ODE vs. Euler for LTCN) would introduce confounding variables, making it impossible to attribute performance differences solely to the model architecture.
+
+| Model | ODE Dynamics | Integrator |
+|:------|:-------------|:-----------|
+| LTCN | LTC dynamics with decay and gating | Euler |
+| LGTCN | Graph-filtered LTC dynamics | Euler |
+| Neural ODE | MLP-based `dy/dt = f(y)` | Euler |
+
 ## Results
 
 After running the training script, the following files will be generated in the specified `--save-dir`:
