@@ -55,16 +55,6 @@ class NeuralODELayer(nn.Module):
         # ODE function
         self.ode_func = ODEFunc(hidden_dim, num_hidden_layers)
 
-        # Input integration (how to combine input with state)
-        self.input_gate = nn.Sequential(
-            nn.Linear(hidden_dim * 2, hidden_dim),
-            nn.Sigmoid(),
-        )
-        self.input_transform = nn.Sequential(
-            nn.Linear(hidden_dim * 2, hidden_dim),
-            nn.Tanh(),
-        )
-
     def forward(
         self,
         y: torch.Tensor,
@@ -83,13 +73,10 @@ class NeuralODELayer(nn.Module):
         Returns:
             Next hidden state (..., hidden_dim)
         """
-        # Incorporate input into state
+        # Incorporate input into state via simple addition (no gating)
         if u_t is not None:
             u_proj = self.input_proj(u_t)
-            combined = torch.cat([y, u_proj], dim=-1)
-            gate = self.input_gate(combined)
-            update = self.input_transform(combined)
-            y = y * (1 - gate) + update * gate
+            y = y + u_proj
 
         # Time span for integration
         t_span = torch.tensor([0.0, dt * n_steps], device=y.device, dtype=y.dtype)

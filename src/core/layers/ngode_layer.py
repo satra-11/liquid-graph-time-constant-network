@@ -78,16 +78,6 @@ class NeuralGraphODELayer(nn.Module):
         # ODE function
         self.ode_func = GraphODEFunc(hidden_dim, K)
 
-        # Input integration gate
-        self.input_gate = nn.Sequential(
-            nn.Linear(hidden_dim * 2, hidden_dim),
-            nn.Sigmoid(),
-        )
-        self.input_transform = nn.Sequential(
-            nn.Linear(hidden_dim * 2, hidden_dim),
-            nn.Tanh(),
-        )
-
     def forward(
         self,
         x: torch.Tensor,
@@ -108,14 +98,9 @@ class NeuralGraphODELayer(nn.Module):
         Returns:
             Next hidden state with same shape as x
         """
-        # Transform input using graph filter
+        # Transform input using graph filter and add to state (no gating)
         u_proj = self.input_filter(u, S_powers)
-
-        # Combine input with state
-        combined = torch.cat([x, u_proj], dim=-1)
-        gate = self.input_gate(combined)
-        update = self.input_transform(combined)
-        x = x * (1 - gate) + update * gate
+        x = x + u_proj
 
         # Set S_powers for ODE function
         self.ode_func.S_powers = S_powers
