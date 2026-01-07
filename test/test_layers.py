@@ -416,7 +416,6 @@ def test_neural_ode_controller():
         frame_width=W_frame,
         hidden_dim=hidden_dim,
         output_dim=output_dim,
-        solver="euler",
     )
 
     frames = torch.randn(B, T, C, H_frame, W_frame)
