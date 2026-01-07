@@ -9,6 +9,7 @@ class NeuralODEController(nn.Module):
     """映像データからNeural ODEを使って制御信号を生成するコントローラー.
 
     LTCNControllerと同様のインターフェースで、LTCNLayerの代わりにNeuralODELayerを使用。
+    パラメータ数はLTCNと同程度になるよう調整済み。
     """
 
     def __init__(
@@ -17,7 +18,8 @@ class NeuralODEController(nn.Module):
         frame_width: int = 64,
         hidden_dim: int = 64,
         output_dim: int = 6,
-        num_hidden_layers: int = 2,
+        num_hidden_layers: int = 1,  # Reduced to match LTCN param count
+        mlp_hidden_dim: int = 10,  # Internal MLP width for fair comparison
     ):
         super().__init__()
         self.frame_height = frame_height
@@ -42,6 +44,7 @@ class NeuralODEController(nn.Module):
             in_dim=hidden_dim,
             hidden_dim=hidden_dim,
             num_hidden_layers=num_hidden_layers,
+            mlp_hidden_dim=mlp_hidden_dim,
         )
 
         # Control output decoder

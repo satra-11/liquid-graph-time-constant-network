@@ -3,20 +3,31 @@ import torch.nn as nn
 
 
 class ODEFunc(nn.Module):
-    """ODE dynamics function: dy/dt = f(t, y).
+    """ODE dynamics function: dy/dt = f(y).
 
     Uses an MLP to model the dynamics.
     """
 
-    def __init__(self, hidden_dim: int, num_hidden_layers: int = 2):
+    def __init__(
+        self,
+        hidden_dim: int,
+        mlp_hidden_dim: int | None = None,
+        num_hidden_layers: int = 2,
+    ):
         super().__init__()
         self.hidden_dim = hidden_dim
+        # Use separate MLP width if specified, otherwise match hidden_dim
+        self.mlp_hidden_dim = (
+            mlp_hidden_dim if mlp_hidden_dim is not None else hidden_dim
+        )
 
         layers = []
+        in_features = hidden_dim
         for i in range(num_hidden_layers):
-            layers.append(nn.Linear(hidden_dim, hidden_dim))
+            layers.append(nn.Linear(in_features, self.mlp_hidden_dim))
             layers.append(nn.Tanh())
-        layers.append(nn.Linear(hidden_dim, hidden_dim))
+            in_features = self.mlp_hidden_dim
+        layers.append(nn.Linear(in_features, hidden_dim))
 
         self.net = nn.Sequential(*layers)
 
@@ -37,6 +48,7 @@ class NeuralODELayer(nn.Module):
         in_dim: int,
         hidden_dim: int,
         num_hidden_layers: int = 2,
+        mlp_hidden_dim: int | None = None,
     ):
         super().__init__()
         self.in_dim = in_dim
@@ -45,8 +57,8 @@ class NeuralODELayer(nn.Module):
         # Input projection
         self.input_proj = nn.Linear(in_dim, hidden_dim)
 
-        # ODE function
-        self.ode_func = ODEFunc(hidden_dim, num_hidden_layers)
+        # ODE function with configurable MLP width
+        self.ode_func = ODEFunc(hidden_dim, mlp_hidden_dim, num_hidden_layers)
 
     def forward(
         self,
