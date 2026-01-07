@@ -289,7 +289,7 @@ def test_neural_ode_layer_basic():
     """Test NeuralODELayer basic functionality."""
     in_dim, hidden_dim = 8, 16
 
-    layer = NeuralODELayer(in_dim, hidden_dim, num_hidden_layers=2, solver="euler")
+    layer = NeuralODELayer(in_dim, hidden_dim, num_hidden_layers=2)
 
     y = torch.randn(hidden_dim)
     u_t = torch.randn(in_dim)
@@ -305,7 +305,7 @@ def test_neural_ode_layer_batch():
     batch_size = 4
     in_dim, hidden_dim = 5, 10
 
-    layer = NeuralODELayer(in_dim, hidden_dim, solver="euler")
+    layer = NeuralODELayer(in_dim, hidden_dim)
 
     y = torch.randn(batch_size, hidden_dim)
     u_t = torch.randn(batch_size, in_dim)
@@ -320,7 +320,7 @@ def test_neural_ode_layer_no_input():
     """Test NeuralODELayer with no external input."""
     hidden_dim = 12
 
-    layer = NeuralODELayer(8, hidden_dim, solver="euler")
+    layer = NeuralODELayer(8, hidden_dim)
 
     y = torch.randn(hidden_dim)
 
@@ -334,7 +334,7 @@ def test_neural_ode_layer_gradient_flow():
     """Test gradient flow through NeuralODELayer."""
     in_dim, hidden_dim = 6, 10
 
-    layer = NeuralODELayer(in_dim, hidden_dim, solver="euler")
+    layer = NeuralODELayer(in_dim, hidden_dim)
 
     y = torch.randn(hidden_dim, requires_grad=True)
     u_t = torch.randn(in_dim, requires_grad=True)

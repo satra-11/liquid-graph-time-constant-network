@@ -18,7 +18,6 @@ class NeuralODEController(nn.Module):
         hidden_dim: int = 64,
         output_dim: int = 6,
         num_hidden_layers: int = 2,
-        solver: str = "dopri5",
     ):
         super().__init__()
         self.frame_height = frame_height
@@ -43,7 +42,6 @@ class NeuralODEController(nn.Module):
             in_dim=hidden_dim,
             hidden_dim=hidden_dim,
             num_hidden_layers=num_hidden_layers,
-            solver=solver,
         )
 
         # Control output decoder
