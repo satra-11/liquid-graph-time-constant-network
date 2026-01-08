@@ -126,8 +126,9 @@ def get_training_config(model_type: str) -> dict:
             "gradient_clip_norm": 5.0,
         }
     else:
+        # ltcn, node も全シーケンスでLossを計算（評価時と統一）
         return {
-            "use_full_sequence_loss": False,
+            "use_full_sequence_loss": True,
             "gradient_clip_norm": 1.0,
         }
 
