@@ -62,12 +62,13 @@ extract:
 	uv run python scripts/extract_features.py
 
 train:
-	uv run python scripts/train_driving.py --model ltcn
-	uv run python scripts/train_driving.py --model node
+	python3 scripts/train_driving.py --model ltcn
+	python3 scripts/train_driving.py --model node
 
 evaluate:
-	uv run python scripts/evaluate_driving.py --model ltcn
-	uv run python scripts/evaluate_driving.py --model node
+	python3 scripts/evaluate_driving.py --model ltcn --data-dir ./data/raw --model-path ./driving_results/LTCN_checkpoint.pth
+	python3 scripts/evaluate_driving.py --model node --data-dir ./data/raw --model-path ./driving_results/NODE_checkpoint.pth
+
 
 flocking:
 	uv run python -m src.flocking.run
@@ -90,4 +91,4 @@ clean:
 	find . -type d -name ".ruff_cache" -exec rm -rf {} + 2>/dev/null || true
 	find . -type f -name "*.pyc" -delete 2>/dev/null || true
 
-all: extract train
+all: train evaluate
