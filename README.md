@@ -163,7 +163,7 @@ python -m src.flocking.run
 
 ## Model Structures
 
-The `scripts/train_driving.py` script follows the workflow below to train and evaluate the LGTCN and LTCN models.
+The `scripts/train_driving.py` script follows the workflow below to train and evaluate the LGTCN, LTCN, and Neural ODE models.
 
 ```mermaid
 flowchart TD
@@ -175,9 +175,9 @@ flowchart TD
       --> LC["reshape/permute <br>→ B×T×64×128"]
       --> LD["encoder <br>(128→H) → B×T×64×H"]
       --> LF["LTCNLayer:<br>(h_t, x_t)→ h_{t+1}"]
-      --> LG["decoder<br>(h_{t+1}) → B×1"]
-    LG --> LH["time-stacked controls: B×T×1"]
-    LF --> LI["final_hidden: B×N"]
+      --> LG["decoder<br>(h_{t+1}) → B×6"]
+    LG --> LH["time-stacked controls: B×T×6"]
+    LF --> LI["final_hidden: B×H"]
 
     subgraph L_IN["Inputs"]
       direction LR
@@ -187,6 +187,30 @@ flowchart TD
       direction LR
       LH
       LI
+    end
+  end
+
+  %% ===== Center: Neural ODE =====
+  subgraph N["Neural ODE"]
+    direction TB
+    NA["frames <br> (B×T×H×W×C)"]
+      --> NB["CNN/ResNet18<br>→(B·T)×128×8×8"]
+      --> NC["reshape/permute <br>→ B×T×64×128"]
+      --> ND["node_encoder <br>(128→H) → B×T×64×H"]
+      --> NE["spatial mean <br>→ B×T×H"]
+      --> NF["NeuralODELayer:<br>dy/dt = MLP(y) <br> Euler integration"]
+      --> NG["decoder<br>(h_{t+1}) → B×6"]
+    NG --> NH["time-stacked controls: B×T×6"]
+    NF --> NI["final_hidden: B×H"]
+
+    subgraph N_IN["Inputs"]
+      direction LR
+      NA
+    end
+    subgraph N_OUT["Outputs"]
+      direction LR
+      NH
+      NI
     end
   end
 
@@ -203,7 +227,7 @@ flowchart TD
     RB --> RC["reshape/permute → B×T×64×128"]
     RC --> RD["node_encoder (128→H) → B×T×64×H"]
 
-    RH0 -- "x_t" --> RH["LGTCN(x_t, u_t, S_powers) → x_{t+1}"]
+    RH0 -- "x_t" --> RH["LGTCNLayer:<br>(x_t, u_t, S_powers)→ x_{t+1}"]
     RD -- "u_t" --> RH
     RADJ -. "S_powers" .-> RH
 
@@ -227,7 +251,7 @@ flowchart TD
 
   %% Style
   classDef io stroke:#8b5cf6,stroke-width:3px,color:#fff;
-  class L_IN,L_OUT,R_IN,R_OUT,RA,RADJ,RH0 io;
+  class L_IN,L_OUT,N_IN,N_OUT,R_IN,R_OUT,RA,RADJ,RH0 io;
 ```
 
 ### Flocking Models
