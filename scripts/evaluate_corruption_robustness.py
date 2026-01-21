@@ -344,7 +344,7 @@ if __name__ == "__main__":
 
     parser.add_argument("--hidden-dim", type=int, default=64)
     parser.add_argument("--num-layers-ltcn", type=int, default=4)
-    parser.add_argument("--num-hidden-layers-node", type=int, default=2)
+    parser.add_argument("--num-hidden-layers-node", type=int, default=1)
     parser.add_argument("--solver", default="dopri5")
 
     parser.add_argument("--sequence-length", type=int, default=20)
