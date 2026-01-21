@@ -16,7 +16,6 @@ wheels/
 
 /data
 /driving_results
-/driving_results_ode
 /flocking_results
 /noise_robustness_results
 
