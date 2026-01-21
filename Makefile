@@ -73,6 +73,14 @@ evaluate:
 flocking:
 	uv run python -m src.flocking.run
 
+evaluate-corruption:
+	uv run python scripts/evaluate_corruption_robustness.py \
+		--data-dir ./data/raw \
+		--ltcn-model-path ./driving_results/LTCN_checkpoint.pth \
+		--node-model-path ./driving_results/NODE_checkpoint.pth \
+		--corruption-type bias \
+		--levels 0.0,0.1,0.2,0.3
+
 # ============================================
 # Tools
 # ============================================

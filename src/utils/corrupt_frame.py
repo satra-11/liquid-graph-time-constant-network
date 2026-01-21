@@ -1,94 +1,4 @@
 import torch
-import torch.nn.functional as F
-
-
-@torch.no_grad()
-def add_whiteout(
-    frame: torch.Tensor,
-    stops: float = 1.0,  # 露出オーバー量（絞り段）→ 2**stops 倍。強い
-    bloom_strength: float = 1.0,  # にじみ量（強い）
-    bloom_sigma: float = 10.0,  # にじみの広がり（強い）
-    wash: float = 0.2,  # 脱色（0で色保持、1で完全モノクロ寄り）
-    lift: float = 0.12,  # 黒浮き（ベース持ち上げ）
-    contrast: float = 0.7,  # コントラスト（<1で低下）
-    center_bias: float = 0.5,  # 画面中心をさらに飛ばす
-    gamma: float = 2.0,  # トーンの自然さ用
-) -> torch.Tensor:
-    """
-    強めの「露出オーバー白飛び」生成。frame: [T,H,W,C] or [H,W,C] in [0,1]
-    """
-    # --- shape整形 ---
-    if frame.dim() == 4:  # [T,H,W,C] -> [N,C,H,W]
-        x = frame.permute(0, 3, 1, 2).contiguous()
-    elif frame.dim() == 3:  # [H,W,C] -> [1,C,H,W]
-        x = frame.permute(2, 0, 1).unsqueeze(0).contiguous()
-    else:
-        raise ValueError("frame must be [T,H,W,C] or [H,W,C].")
-    N, C, H, W = x.shape
-    dev, dt = x.device, x.dtype
-
-    # --- 1) ガンマ→線形空間で“露出オーバー”を素直に掛ける ---
-    x_lin = torch.clamp(x, 0, 1) ** gamma
-    x_lin = x_lin * (2.0**stops)  # ここが露出過多の本体
-
-    # --- 2) 1.0を超えたハイライトを抽出して太めのbloom ---
-    overflow = torch.relu(x_lin - 1.0)
-    if C > 1:
-        lum = (
-            0.2126 * overflow[:, 0:1]
-            + 0.7152 * overflow[:, 1:2]
-            + 0.0722 * overflow[:, 2:3]
-        )
-    else:
-        lum = overflow
-
-    # separable Gaussian（簡素実装）
-    k = int(2 * round(3 * max(1.0, bloom_sigma)) + 1)
-    t = torch.arange(k, device=dev, dtype=dt) - k // 2
-    g = torch.exp(-0.5 * (t / bloom_sigma) ** 2)
-    g = g / g.sum()
-    gH = g.view(1, 1, 1, -1)
-    gV = g.view(1, 1, -1, 1)
-    bloom_map = F.conv2d(lum, gH, padding=(0, k // 2))
-    bloom_map = F.conv2d(bloom_map, gV, padding=(k // 2, 0))
-
-    # RGBへ反映
-    if C > 1:
-        bloom_rgb = bloom_map.repeat(1, C, 1, 1)
-    else:
-        bloom_rgb = bloom_map
-    x_lin = x_lin + bloom_strength * bloom_rgb
-
-    # --- 3) 脱色＋黒浮き＋コントラスト低下（“白く眠い”画に寄せる） ---
-    if C > 1 and wash > 0:
-        gray = (
-            0.2126 * x_lin[:, 0:1] + 0.7152 * x_lin[:, 1:2] + 0.0722 * x_lin[:, 2:3]
-        ).repeat(1, C, 1, 1)
-        x_lin = x_lin * (1 - wash) + gray * wash
-
-    # 黒を持ち上げて全体を白寄りに
-    x_lin = x_lin + lift
-    # コントラストを落とす
-    x_lin = (x_lin - 0.5) * contrast + 0.5
-
-    # --- 4) 中心をさらに飛ばす（露出の偏り再現） ---
-    yy, xx = torch.meshgrid(
-        torch.linspace(-1, 1, H, device=dev, dtype=dt),
-        torch.linspace(-1, 1, W, device=dev, dtype=dt),
-        indexing="ij",
-    )
-    center = 1 - torch.clamp(torch.sqrt(xx**2 + yy**2), 0, 1)  # 中心1, 端0
-    center = center[None, None]  # [1,1,H,W]
-    x_lin = x_lin * (1.0 + center_bias * center)
-
-    # --- 5) 逆ガンマ＆クリップ ---
-    out = torch.clamp(x_lin, 0, 1) ** (1.0 / gamma)
-
-    # --- 元shapeへ ---
-    if frame.dim() == 4:
-        return out.permute(0, 2, 3, 1)
-    else:
-        return out.squeeze(0).permute(1, 2, 0)
 
 
 def add_gaussian_noise(
@@ -106,3 +16,87 @@ def add_gaussian_noise(
     noise = torch.normal(mean=mean, std=std, size=frame.shape, device=frame.device)
     noisy_frame = frame + noise
     return torch.clamp(noisy_frame, 0.0, 1.0)
+
+
+@torch.no_grad()
+def add_static_bias(frame: torch.Tensor, bias: float = 0.0) -> torch.Tensor:
+    """
+    Level 1: 全体的な輝度シフト (Static Bias)
+    入力画像全体のピクセル値に定数を足して、クリッピングする。
+    Args:
+        frame: [T,H,W,C] or [H,W,C] in [0,1]
+        bias: 加算する定数 (例: 0.1, 0.3, 0.5)
+    """
+    return torch.clamp(frame + bias, 0.0, 1.0)
+
+
+@torch.no_grad()
+def add_overexposure(frame: torch.Tensor, factor: float = 1.0) -> torch.Tensor:
+    """
+    Level 2: コントラストの破壊 (Overexposure)
+    ゲインを上げて情報を飛ばす。
+    Args:
+        frame: [T,H,W,C] or [H,W,C] in [0,1]
+        factor: 乗算する係数 (例: 1.2, 1.5, 2.0)
+    """
+    return torch.clamp(frame * factor, 0.0, 1.0)
+
+
+@torch.no_grad()
+def simulate_tunnel_exit(
+    frames: torch.Tensor,
+    exit_idx: int = 10,
+    peak_intensity: float = 3.0,
+    dark_factor: float = 0.3,
+    transition_duration: int = 5,
+) -> torch.Tensor:
+    """
+    Level 3: トンネル出口シミュレーション (Time-varying Exposure)
+    暗い -> 急に真っ白 -> 普通 という時系列変化を与える。
+
+    Args:
+        frames: [T, H, W, C] or [B, T, H, W, C] in [0,1]
+        exit_idx: 出口を出る（白飛び開始）タイミングのインデックス
+        peak_intensity: 白飛びのピーク強度 (factor)
+        dark_factor: トンネル内の暗さ係数 (< 1.0)
+        transition_duration: 白飛びから通常に戻るまでの期間 (フレーム数)
+    """
+    if frames.dim() == 4:
+        # [T, H, W, C]
+        T, H, W, C = frames.shape
+        batch_mode = False
+    elif frames.dim() == 5:
+        # [B, T, H, W, C]
+        B, T, H, W, C = frames.shape
+        batch_mode = True
+    else:
+        raise ValueError("frames must be [T, H, W, C] or [B, T, H, W, C]")
+
+    out_frames = frames.clone()
+
+    # タイムステップの次元インデックス (4Dなら0, 5Dなら1)
+    t_dim = 1 if batch_mode else 0
+    len_t = frames.shape[t_dim]
+
+    # タイムステップごとに処理
+    for t in range(len_t):
+        if t < exit_idx:
+            # トンネル内: 暗い
+            factor = dark_factor
+        elif t < exit_idx + transition_duration:
+            # 出口直後: 白飛び -> 徐々に回復
+            progress = (t - exit_idx) / transition_duration
+            current_intensity = peak_intensity - (peak_intensity - 1.0) * progress
+            factor = current_intensity
+        else:
+            # 通常走行
+            factor = 1.0
+
+        if batch_mode:
+            # [B, T, H, W, C] -> target [B, H, W, C] at index t
+            out_frames[:, t] = torch.clamp(frames[:, t] * factor, 0.0, 1.0)
+        else:
+            # [T, H, W, C] -> target [H, W, C] at index t
+            out_frames[t] = torch.clamp(frames[t] * factor, 0.0, 1.0)
+
+    return out_frames
