@@ -66,7 +66,7 @@ This will read images from `/data/raw` and save `.npy` features to `/data/proces
 Start training by executing the command below. The results will be generated in the `/driving_results` folder by default.
 
 ```bash
-python3 scripts/train_driving.py
+python3 scripts/train_driving.py --model lgtcn
 ```
 
 #### Command-Line Arguments
@@ -75,10 +75,11 @@ You can customize the training process using the following arguments:
 
 | Argument | Type | Default | Description |
 |:---|:---|:---|:---|
+| `--model` | str | **Required** | Model to train: `lgtcn`, `ltcn`, `node`, `ngode`. |
 | `--seed` | int | 42 | Random seed for reproducibility. |
 | `--sequence-length` | int | 20 | Length of the input sequences. |
-| `--batch-size` | int | 32 | Batch size for training. |
-| `--epochs` | int | 50 | Number of training epochs. |
+| `--batch-size` | int | 500 | Batch size for training. |
+| `--epochs` | int | 100 | Number of training epochs. |
 | `--lr` | float | 1e-3 | Learning rate for the optimizer. |
 | `--hidden-dim` | int | 64 | Dimension of the hidden states in the models. |
 | `--K` | int | 2 | Neighborhood size (K-hop) for the LGTCN graph filter. |
@@ -91,7 +92,11 @@ You can customize the training process using the following arguments:
 
 ### 3\. Evaluation
 
-The training script automatically runs an evaluation on the test set after training is complete. The evaluation compares the models' robustness against different levels of input corruption (whiteout noise).
+After training, you can evaluate the models on the test set to measure robustness against different levels of input corruption (whiteout noise).
+
+```bash
+python3 scripts/evaluate_driving.py --model ltcn --data-dir ./data/raw --model-path ./driving_results/LTCN_checkpoint.pth
+```
 
 ### 4\. Monitoring with MLflow
 
@@ -99,10 +104,10 @@ You can monitor the training progress and view the results using MLflow.
 To start the MLflow UI, run the following command in the project root directory:
 
 ```bash
-uv run mlflow ui
+uv run mlflow ui --port 5001
 ```
 
-Then, open your browser and navigate to `http://localhost:5000`.
+Then, open your browser and navigate to `http://localhost:5001`.
 You will be able to see:
 
   - **Experiments**: Training runs and their status.
@@ -157,6 +162,9 @@ python -m src.flocking.run
 | `--batch-size` | int | 8 | Batch size. |
 | `--lr` | float | 1e-3 | Learning rate. |
 | `--dagger-interval` | int | 20 | Run DAGGER data collection every N epochs. |
+| `--dagger-trajectories` | int | 10 | Number of trajectories to add per DAGGER. |
+| `--num-layers` | int | 1 | Number of CfGCN layers (FlockingLGTCN). |
+| `--num-blocks` | int | 4 | Number of blocks in LTCN layer (FlockingLTCN). |
 | `--save-dir` | str | `flocking_results` | Directory to save results. |
 
 -----
@@ -363,9 +371,12 @@ After running the training script, the following files will be generated in the 
 │   └───processed/ # Pre-computed CNN features
 ├───scripts/
 ├───src/
-│   ├───layers/
-│   ├───models/
-│   ├───tasks/
+│   ├───core/      # Core model components
+│   │   ├───layers/
+│   │   └───models/
+│   ├───driving/   # Driving task
+│   ├───flocking/  # Flocking task
+│   ├───tasks/     # Analysis tasks
 │   └───utils/
 └───test/
 ```
