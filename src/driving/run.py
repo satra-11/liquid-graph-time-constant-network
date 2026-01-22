@@ -218,8 +218,24 @@ def run_training(args: argparse.Namespace):
         model.to("cpu")
         sample_input_cpu = sample_input.cpu()
 
+        # 入力例をfloat32にキャスト (numpyのデフォルトがdoubleになるのを防ぐ)
+        input_example = sample_input_cpu.numpy().astype(np.float32)
+
+        # モデルの出力を取得してシグネチャを作成
+        with torch.no_grad():
+            output = model(sample_input_cpu)
+            # Tuple出力の場合は最初の要素（制御信号）を使用
+            if isinstance(output, tuple):
+                output = output[0]
+            output_example = output.numpy()
+
+        signature = mlflow.models.infer_signature(input_example, output_example)
+
         mlflow.pytorch.log_model(
-            model, f"{model_type}_model", input_example=sample_input_cpu.numpy()
+            model,
+            artifact_path=f"{model_type}_model",
+            input_example=input_example,
+            signature=signature,
         )
 
     print(f"Training completed! Results saved to {save_dir}")
