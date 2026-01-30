@@ -16,8 +16,8 @@ if __name__ == "__main__":
         "--model",
         type=str,
         required=True,
-        choices=["lgtcn", "ltcn", "node", "ngode"],
-        help="Model to train: lgtcn, ltcn, node, or ngode",
+        choices=["lgtcn", "ltcn", "ngode"],
+        help="Model to train: lgtcn, ltcn, or ngode",
     )
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--num-sequences", type=int, default=800)

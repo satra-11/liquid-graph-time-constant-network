@@ -11,17 +11,13 @@ import mlflow
 from src.core.models import (
     CfGCNController,
     LTCNController,
-    NeuralODEController,
     NeuralGraphODEController,
 )
 from src.tasks import NetworkComparator
 
 
 def train_model(
-    model: LTCNController
-    | CfGCNController
-    | NeuralODEController
-    | NeuralGraphODEController,
+    model: LTCNController | CfGCNController | NeuralGraphODEController,
     model_name: str,
     train_loader: DataLoader,
     val_loader: DataLoader,
@@ -130,10 +126,7 @@ def train_model(
 
 
 def evaluate_model(
-    model: LTCNController
-    | CfGCNController
-    | NeuralODEController
-    | NeuralGraphODEController,
+    model: LTCNController | CfGCNController | NeuralGraphODEController,
     model_name: str,
     test_data: dict,
     device: torch.device,

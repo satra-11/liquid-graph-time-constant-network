@@ -6,12 +6,10 @@ from src.core.layers import (
     LGTCNLayer,
     CfGCNLayer,
     LTCNLayer,
-    NeuralODELayer,
     NeuralGraphODELayer,
 )
 from src.core.models import (
     CfGCNController,
-    NeuralODEController,
     NeuralGraphODEController,
 )
 
@@ -24,11 +22,8 @@ def test_gnn_layer_clamp_and_grad(LayerCls):
     S_powers = compute_s_powers(S, K)
     S_powers_2d = [sp.squeeze(0) for sp in S_powers]
 
-    # CfGCNLayerはresidual=Falseでレガシー動作をテスト
-    if LayerCls == CfGCNLayer:
-        layer = LayerCls(Din, H, K, residual=False)
-    else:
-        layer = LayerCls(Din, H, K)
+    # CfGCNLayer initialization
+    layer = LayerCls(Din, H, K)
     x = torch.zeros(N, H, requires_grad=True)  # start at zero
     u = torch.randn(N, Din)
 
@@ -174,8 +169,8 @@ def test_cfgcn_layer_time_parameter():
     S_powers = compute_s_powers(S, K)
     S_powers_2d = [sp.squeeze(0) for sp in S_powers]
 
-    # residual=Falseでテスト
-    layer = CfGCNLayer(Din, H, K, residual=False)
+    # residual=Falseのコメントアウトまたは削除
+    layer = CfGCNLayer(Din, H, K)
     x = torch.randn(N, H)
     u = torch.randn(N, Din)
 
@@ -227,8 +222,8 @@ def test_all_layers_consistency():
     assert torch.all(y <= 1.0 + 1e-6)
     assert torch.all(y >= -1.0 - 1e-6)
 
-    # Test CfGCNLayer（residual=Falseでテスト）
-    layer_cfgcn = CfGCNLayer(Din, H, K, residual=False)
+    # Test CfGCNLayer
+    layer_cfgcn = CfGCNLayer(Din, H, K)
     y = layer_cfgcn(x, u, S_powers_2d)
     assert y.shape == (N, H)
     assert torch.isfinite(y).all()
@@ -280,73 +275,6 @@ def test_cfgcn_controller_matrix_types(matrix_type):
     # Check for finite values
     assert torch.isfinite(controls).all()
     assert torch.isfinite(final_hidden).all()
-
-
-# ============== Neural ODE Tests ==============
-
-
-def test_neural_ode_layer_basic():
-    """Test NeuralODELayer basic functionality."""
-    in_dim, hidden_dim = 8, 16
-
-    layer = NeuralODELayer(in_dim, hidden_dim, num_hidden_layers=2)
-
-    y = torch.randn(hidden_dim)
-    u_t = torch.randn(in_dim)
-
-    y_next = layer(y, u_t, dt=0.1, n_steps=1)
-
-    assert y_next.shape == (hidden_dim,)
-    assert torch.isfinite(y_next).all()
-
-
-def test_neural_ode_layer_batch():
-    """Test NeuralODELayer with batch input."""
-    batch_size = 4
-    in_dim, hidden_dim = 5, 10
-
-    layer = NeuralODELayer(in_dim, hidden_dim)
-
-    y = torch.randn(batch_size, hidden_dim)
-    u_t = torch.randn(batch_size, in_dim)
-
-    y_next = layer(y, u_t, dt=0.05, n_steps=2)
-
-    assert y_next.shape == (batch_size, hidden_dim)
-    assert torch.isfinite(y_next).all()
-
-
-def test_neural_ode_layer_no_input():
-    """Test NeuralODELayer with no external input."""
-    hidden_dim = 12
-
-    layer = NeuralODELayer(8, hidden_dim)
-
-    y = torch.randn(hidden_dim)
-
-    y_next = layer(y, u_t=None, dt=0.1, n_steps=1)
-
-    assert y_next.shape == (hidden_dim,)
-    assert torch.isfinite(y_next).all()
-
-
-def test_neural_ode_layer_gradient_flow():
-    """Test gradient flow through NeuralODELayer."""
-    in_dim, hidden_dim = 6, 10
-
-    layer = NeuralODELayer(in_dim, hidden_dim)
-
-    y = torch.randn(hidden_dim, requires_grad=True)
-    u_t = torch.randn(in_dim, requires_grad=True)
-
-    y_next = layer(y, u_t, dt=0.1, n_steps=1)
-    loss = y_next.sum()
-
-    loss.backward()
-
-    assert y.grad is not None
-    assert u_t.grad is not None
-    assert all(p.grad is not None for p in layer.parameters())
 
 
 def test_neural_graph_ode_layer_basic():
@@ -404,28 +332,6 @@ def test_neural_graph_ode_layer_gradient_flow():
     out.mean().backward()
     assert x.grad is not None
     assert all(p.grad is not None for p in layer.parameters())
-
-
-def test_neural_ode_controller():
-    """Test NeuralODEController end-to-end."""
-    B, T, C, H_frame, W_frame = 2, 3, 3, 64, 64
-    hidden_dim, output_dim = 16, 6
-
-    controller = NeuralODEController(
-        frame_height=H_frame,
-        frame_width=W_frame,
-        hidden_dim=hidden_dim,
-        output_dim=output_dim,
-    )
-
-    frames = torch.randn(B, T, C, H_frame, W_frame)
-
-    controls, final_hidden = controller(frames)
-
-    assert controls.shape == (B, T, output_dim)
-    assert final_hidden.shape == (B, hidden_dim)
-    assert torch.isfinite(controls).all()
-    assert torch.isfinite(final_hidden).all()
 
 
 @pytest.mark.parametrize("matrix_type", ["adjacency", "laplacian", "random_walk"])

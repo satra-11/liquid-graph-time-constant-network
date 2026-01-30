@@ -12,7 +12,6 @@ import mlflow.pytorch
 from src.core.models import (
     CfGCNController,
     LTCNController,
-    NeuralODEController,
     NeuralGraphODEController,
 )
 from src.driving.data import setup_dataloaders
@@ -38,13 +37,7 @@ def create_model(model_type: str, args: argparse.Namespace):
             hidden_dim=args.hidden_dim,
             num_layers=args.num_layers_ltcn,
         )
-    elif model_type == "node":
-        return NeuralODEController(
-            frame_height=64,
-            frame_width=64,
-            hidden_dim=args.hidden_dim,
-            output_dim=6,
-        )
+
     elif model_type == "ngode":
         return NeuralGraphODEController(
             frame_height=64,
@@ -111,7 +104,7 @@ def create_optimizer_and_scheduler(model, model_type: str, args: argparse.Namesp
         ]
         optimizer = optim.Adam(param_groups, weight_decay=1e-4)
     else:
-        # LTCN, NODE は標準の設定
+        # LTCN は標準の設定
         optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
     scheduler = CosineAnnealingLR(optimizer, T_max=args.epochs, eta_min=1e-6)
@@ -126,7 +119,7 @@ def get_training_config(model_type: str) -> dict:
             "gradient_clip_norm": 5.0,
         }
     else:
-        # ltcn, node も全シーケンスでLossを計算（評価時と統一）
+        # ltcn も全シーケンスでLossを計算（評価時と統一）
         return {
             "use_full_sequence_loss": True,
             "gradient_clip_norm": 1.0,

@@ -75,7 +75,7 @@ You can customize the training process using the following arguments:
 
 | Argument | Type | Default | Description |
 |:---|:---|:---|:---|
-| `--model` | str | **Required** | Model to train: `lgtcn`, `ltcn`, `node`, `ngode`. |
+| `--model` | str | **Required** | Model to train: `lgtcn`, `ltcn`, `ngode`. |
 | `--seed` | int | 42 | Random seed for reproducibility. |
 | `--sequence-length` | int | 20 | Length of the input sequences. |
 | `--batch-size` | int | 500 | Batch size for training. |
@@ -171,7 +171,7 @@ python -m src.flocking.run
 
 ## Model Structures
 
-The `scripts/train_driving.py` script follows the workflow below to train and evaluate the LGTCN, LTCN, and Neural ODE models.
+The `scripts/train_driving.py` script follows the workflow below to train and evaluate the LGTCN and LTCN models.
 
 ```mermaid
 flowchart TD
@@ -198,29 +198,7 @@ flowchart TD
     end
   end
 
-  %% ===== Center: Neural ODE =====
-  subgraph N["Neural ODE"]
-    direction TB
-    NA["frames <br> (B×T×H×W×C)"]
-      --> NB["CNN/ResNet18<br>→(B·T)×128×8×8"]
-      --> NC["reshape/permute <br>→ B×T×64×128"]
-      --> ND["node_encoder <br>(128→H) → B×T×64×H"]
-      --> NE["spatial mean <br>→ B×T×H"]
-      --> NF["NeuralODELayer:<br>dy/dt = MLP(y) <br> Euler integration"]
-      --> NG["decoder<br>(h_{t+1}) → B×6"]
-    NG --> NH["time-stacked controls: B×T×6"]
-    NF --> NI["final_hidden: B×H"]
 
-    subgraph N_IN["Inputs"]
-      direction LR
-      NA
-    end
-    subgraph N_OUT["Outputs"]
-      direction LR
-      NH
-      NI
-    end
-  end
 
   %% ===== Right: LGTCN =====
   subgraph R["LGTCN"]
@@ -329,7 +307,7 @@ flowchart TD
 
 ### Numerical Integration
 
-All models (LTCN, LGTCN, Neural ODE) use **Euler integration** for solving ODEs:
+All models (LTCN, LGTCN) use **Euler integration** for solving ODEs:
 
 ```python
 # Euler method: y_{n+1} = y_n + dt * f(y_n)
@@ -338,13 +316,13 @@ for _ in range(n_steps):
     y = y + dt * dydt
 ```
 
-This unified integration scheme ensures **fair comparison** across models. Using different solvers (e.g., adaptive Runge-Kutta for Neural ODE vs. Euler for LTCN) would introduce confounding variables, making it impossible to attribute performance differences solely to the model architecture.
+This unified integration scheme ensures **fair comparison** across models.
 
 | Model | ODE Dynamics | Integrator |
 |:------|:-------------|:-----------|
 | LTCN | LTC dynamics with decay and gating | Euler |
 | LGTCN | Graph-filtered LTC dynamics | Euler |
-| Neural ODE | MLP-based `dy/dt = f(y)` | Euler |
+
 
 ## Results
 

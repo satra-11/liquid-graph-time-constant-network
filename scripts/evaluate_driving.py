@@ -33,8 +33,8 @@ if __name__ == "__main__":
         "--model",
         type=str,
         required=True,
-        choices=["lgtcn", "ltcn", "node", "ngode"],
-        help="Model type to evaluate (lgtcn, ltcn, node, ngode)",
+        choices=["lgtcn", "ltcn", "ngode"],
+        help="Model type to evaluate (lgtcn, ltcn, ngode)",
     )
     parser.add_argument(
         "--model-path",

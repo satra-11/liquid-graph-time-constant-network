@@ -10,7 +10,6 @@ import torch
 from src.core.models import (
     CfGCNController,
     LTCNController,
-    NeuralODEController,
     NeuralGraphODEController,
 )
 from src.driving.data import setup_dataloaders
@@ -68,13 +67,7 @@ def run_single_model_evaluation(args: argparse.Namespace):
                 hidden_dim=args.hidden_dim,
                 num_layers=args.num_layers_ltcn,
             )
-        elif args.model == "node":
-            model = NeuralODEController(
-                frame_height=64,
-                frame_width=64,
-                hidden_dim=args.hidden_dim,
-                output_dim=6,
-            )
+
         elif args.model == "ngode":
             model = NeuralGraphODEController(
                 frame_height=64,
