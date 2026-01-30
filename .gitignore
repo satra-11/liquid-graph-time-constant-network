@@ -13,7 +13,9 @@ wheels/
 # Others
 /tmp
 .vscode/
+.serena/
 
+/docs
 /data
 /driving_results
 /flocking_results
