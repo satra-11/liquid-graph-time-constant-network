@@ -54,8 +54,9 @@ lint:
 test:
 	uv run pytest
 
+
 # ============================================
-# Training & Evaluation
+# Training
 # ============================================
 
 extract:
@@ -65,21 +66,9 @@ train:
 	python3 scripts/train_driving.py --model ltcn
 
 
-evaluate:
-	python3 scripts/evaluate_driving.py --model ltcn --data-dir ./data/raw --model-path ./driving_results/LTCN_checkpoint.pth
-
-
 
 flocking:
 	uv run python -m src.flocking.run
-
-evaluate-corruption:
-	uv run python scripts/evaluate_corruption_robustness.py \
-		--data-dir ./data/raw \
-		--model-type ltcn \
-		--model-path ./driving_results/LTCN_checkpoint.pth \
-		--corruption-type bias \
-		--levels 0.0,0.1,0.2,0.3
 
 # ============================================
 # Tools
@@ -99,4 +88,4 @@ clean:
 	find . -type d -name ".ruff_cache" -exec rm -rf {} + 2>/dev/null || true
 	find . -type f -name "*.pyc" -delete 2>/dev/null || true
 
-all: train evaluate
+all: train

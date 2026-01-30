@@ -41,7 +41,6 @@ make help
 | `make test` | Run tests with pytest |
 | `make extract` | Extract features from raw images |
 | `make train` | Train the driving models |
-| `make evaluate` | Evaluate trained models |
 | `make flocking` | Run the flocking task |
 | `make mlflow` | Start MLflow UI |
 | `make clean` | Remove cache files |
@@ -90,15 +89,7 @@ You can customize the training process using the following arguments:
 
 *Note: `--num-sequences`, `--corruption-rate`, and `--sensor-sequence` are defined but not currently used in the script.*
 
-### 3\. Evaluation
-
-After training, you can evaluate the models on the test set to measure robustness against different levels of input corruption (whiteout noise).
-
-```bash
-python3 scripts/evaluate_driving.py --model ltcn --data-dir ./data/raw --model-path ./driving_results/LTCN_checkpoint.pth
-```
-
-### 4\. Monitoring with MLflow
+### 3\. Monitoring with MLflow
 
 You can monitor the training progress and view the results using MLflow.
 To start the MLflow UI, run the following command in the project root directory:
@@ -112,7 +103,7 @@ You will be able to see:
 
   - **Experiments**: Training runs and their status.
   - **Metrics**: Real-time plots of training and validation loss.
-  - **Artifacts**: Saved models (`.pth`), training curves, and comparison plots.
+  - **Artifacts**: Saved models (`.pth`).
 
 -----
 
@@ -171,7 +162,7 @@ python -m src.flocking.run
 
 ## Model Structures
 
-The `scripts/train_driving.py` script follows the workflow below to train and evaluate the LGTCN and LTCN models.
+The `scripts/train_driving.py` script follows the workflow below to train the LGTCN and LTCN models.
 
 ```mermaid
 flowchart TD
@@ -331,8 +322,6 @@ After running the training script, the following files will be generated in the 
   - `lgtcn_model.pth` / `ltcn_model.pth`: The trained weights for the LGTCN and LTCN models.
   - `training_curves.png`: A plot showing the training and validation loss curves for both models.
   - `training_info.json`: A JSON file containing the training arguments and the loss history for each epoch.
-  - `comparison_plots.png`: Plots comparing the performance (MSE, MAE) of LGTCN and LTCN under various levels of input corruption.
-  - `comparison_results.json`: Detailed numerical results from the comparative evaluation.
 
 -----
 
